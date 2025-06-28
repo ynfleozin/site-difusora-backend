@@ -1,10 +1,17 @@
 import { scrapeCamara } from "../scrapers/camaraScraper";
 import { scrapeAgenciaBrasil } from "../scrapers/agenciaBrasilScraper";
+import { getCache, setCache } from "../cache/cacheManager";
 import type { NewsArticle } from "../types/news";
 
 export async function getAggregatedNews(): Promise<NewsArticle[]> {
-  console.log("Serviço: Buscando notícias de todas as fontes...");
+  //Acessa as notícias do cache primeiro
+  const cachedNews = await getCache();
+  if (cachedNews) {
+    return cachedNews;
+  }
 
+  //Inicialização do Scraper caso não tenha cache válido
+  console.log("Serviço: Buscando notícias de todas as fontes...");
   //Roda os scrapers em paralelo
   const [camaraNews, agenciaBrasilNews] = await Promise.all([
     scrapeCamara(),
@@ -17,6 +24,10 @@ export async function getAggregatedNews(): Promise<NewsArticle[]> {
   //Ordena o array por data de publicação
   allNews.sort((a, b) => b.publishedAt.getTime() - a.publishedAt.getTime());
 
-  console.log(`Serviço: Total de ${allNews.length} notícias agregadas e ordenadas.`);
+  await setCache(allNews);
+
+  console.log(
+    `Serviço: Total de ${allNews.length} notícias agregadas e ordenadas.`
+  );
   return allNews;
 }
