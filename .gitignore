@@ -1,0 +1,5 @@
+node_modules
+*.log
+news-cache.json
+dist
+.env
