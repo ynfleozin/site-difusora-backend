@@ -6,4 +6,5 @@ export interface NewsArticle {
     publishedAt: Date;
     imageUrl?: string;
     author?: string;
+    category?: string;
 }

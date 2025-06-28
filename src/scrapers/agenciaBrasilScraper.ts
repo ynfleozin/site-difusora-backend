@@ -15,6 +15,7 @@ type FeedItem = {
   content: string;
   creator?: string;
   enclosure?: { url: string };
+  category?: { _: string };
 };
 
 const parser = new Parser<object, FeedItem>({});
@@ -40,6 +41,11 @@ export async function scrapeAgenciaBrasil(): Promise<NewsArticle[]> {
           continue;
         }
 
+        const finalCategory = item.category ? item.category._ : category;
+
+        const formattedCategory =
+          finalCategory.charAt(0).toUpperCase() + finalCategory.slice(1);
+
         allArticles.push({
           title: item.title,
           contentHTML: contentHTML,
@@ -48,6 +54,7 @@ export async function scrapeAgenciaBrasil(): Promise<NewsArticle[]> {
           publishedAt: item.pubDate ? new Date(item.pubDate) : new Date(),
           imageUrl: item.enclosure?.url,
           author: item.creator,
+          category: formattedCategory,
         });
         processedUrls.add(item.link);
       }

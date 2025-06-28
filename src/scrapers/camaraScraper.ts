@@ -50,6 +50,7 @@ export async function scrapeCamara(): Promise<NewsArticle[]> {
 
         const dateTimeRegex = /(\d{2}\/\d{2}\/\d{4}).*?(\d{2}:\d{2})/;
         const match = publishedAtText.match(dateTimeRegex);
+        const category = $$('span.g-artigo__categoria').text().trim();
 
         let publishedAt = new Date();
 
@@ -69,6 +70,7 @@ export async function scrapeCamara(): Promise<NewsArticle[]> {
           publishedAt,
           sourceUrl: link,
           sourceName: "Câmara dos Deputados",
+          category: category
         });
       }
     }
