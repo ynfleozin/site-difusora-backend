@@ -1,5 +1,3 @@
-import axios from "axios";
-import * as cheerio from "cheerio";
 import Parser from "rss-parser";
 import type { NewsArticle } from "../types/news";
 
@@ -10,24 +8,16 @@ const rssFeedUrls = {
   esportes: "https://agenciabrasil.ebc.com.br/rss/esportes/feed.xml",
 };
 
-const parser = new Parser();
+type FeedItem = {
+  title: string;
+  link: string;
+  pubDate: string;
+  content: string;
+  creator?: string;
+  enclosure?: { url: string };
+};
 
-async function getFullArticleContent(articleUrl: string): Promise<string> {
-  try {
-    const headers = {
-      "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
-    };
-
-    const { data: articleHtml } = await axios.get(articleUrl, { headers });
-    const $ = cheerio.load(articleHtml);
-    const contentHTML = $("div.body").html();
-    return contentHTML || "";
-  } catch (error) {
-    console.error(`Erro ao buscar conteúdo completo de ${articleUrl}`, error);
-    return "";
-  }
-}
+const parser = new Parser<object, FeedItem>({});
 
 export async function scrapeAgenciaBrasil(): Promise<NewsArticle[]> {
   console.log("Iniciando scraping da Agência Brasil...");
@@ -38,21 +28,26 @@ export async function scrapeAgenciaBrasil(): Promise<NewsArticle[]> {
     try {
       console.log(`Processando feed: ${category}...`);
       const feed = await parser.parseURL(feedUrl);
-      const latestItems = feed.items.slice(0, 3);
 
-      for (const item of latestItems) {
-        if (!item.link || processedUrls.has(item.link)) continue;
-
-        const contentHTML = await getFullArticleContent(item.link);
-        if (!item.title || !contentHTML) continue;
+      for (const item of feed.items) {
+        const contentHTML = item.content;
+        if (
+          !item.link ||
+          processedUrls.has(item.link) ||
+          !item.title ||
+          !contentHTML
+        ) {
+          continue;
+        }
 
         allArticles.push({
           title: item.title,
-          contentHTML,
+          contentHTML: contentHTML,
           sourceUrl: item.link,
           sourceName: "Agência Brasil",
           publishedAt: item.pubDate ? new Date(item.pubDate) : new Date(),
           imageUrl: item.enclosure?.url,
+          author: item.creator,
         });
         processedUrls.add(item.link);
       }
