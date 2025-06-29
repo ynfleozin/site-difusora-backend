@@ -16,9 +16,14 @@ type FeedItem = {
   creator?: string;
   enclosure?: { url: string };
   category?: { _: string };
+  'imagem-destaque'?: string;
 };
 
-const parser = new Parser<object, FeedItem>({});
+const parser = new Parser<object, FeedItem>({
+  customFields: {
+    item: ['imagem-destaque'],
+  }
+});
 
 export async function scrapeAgenciaBrasil(): Promise<NewsArticle[]> {
   console.log("Iniciando scraping da Agência Brasil...");
@@ -52,7 +57,7 @@ export async function scrapeAgenciaBrasil(): Promise<NewsArticle[]> {
           sourceUrl: item.link,
           sourceName: "Agência Brasil",
           publishedAt: item.pubDate ? new Date(item.pubDate) : new Date(),
-          imageUrl: item.enclosure?.url,
+          imageUrl: item.enclosure?.url || item['imagem-destaque'],
           author: item.creator,
           category: formattedCategory,
         });

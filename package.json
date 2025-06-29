@@ -14,12 +14,14 @@
   "dependencies": {
     "axios": "^1.10.0",
     "cheerio": "^1.1.0",
+    "cors": "^2.8.5",
     "dotenv": "^16.6.0",
     "express": "^5.1.0",
     "rss-parser": "^3.13.0"
   },
   "devDependencies": {
     "@types/cheerio": "^1.0.0",
+    "@types/cors": "^2.8.19",
     "@types/dompurify": "^3.2.0",
     "@types/express": "^5.0.3",
     "@types/node": "^24.0.4",

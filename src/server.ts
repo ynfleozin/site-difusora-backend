@@ -1,17 +1,22 @@
-import express from 'express';
-import type { ErrorRequestHandler } from 'express';
-import {config} from './config/index';
+import express from "express";
+import type { ErrorRequestHandler } from "express";
+import cors from "cors";
+import { config } from "./config/index";
 
-import newsRoutes from './api/routes/news';
+import newsRoutes from "./api/routes/news";
 
 const app = express();
 
-app.use('/api/news', newsRoutes);
+app.use(cors());
+
+app.use(express.json());
+
+app.use("/api/news", newsRoutes);
 
 // Manipulador de erros
 const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).send({message: 'Ocorreu um erro no servidor!'});
+  console.error(err.stack);
+  res.status(500).send({ message: "Ocorreu um erro no servidor!" });
 };
 app.use(errorHandler);
 
