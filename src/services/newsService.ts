@@ -44,3 +44,11 @@ export async function getAggregatedNews(): Promise<NewsArticle[]> {
   );
   return newsWithSlugs;
 }
+
+export async function getArticleBySlug(
+  slug: string
+): Promise<NewsArticle | undefined> {
+  const allNews = await getAggregatedNews();
+
+  return allNews.find((article) => article.slug === slug);
+}
