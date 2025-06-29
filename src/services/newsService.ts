@@ -3,6 +3,13 @@ import { scrapeAgenciaBrasil } from "../scrapers/agenciaBrasilScraper";
 import { getCache, setCache } from "../cache/cacheManager";
 import type { NewsArticle } from "../types/news";
 
+function createSlug(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/ /g, "-")
+    .replace(/[^\w-]+/g, "");
+}
+
 export async function getAggregatedNews(): Promise<NewsArticle[]> {
   //Acessa as notícias do cache primeiro
   const cachedNews = await getCache();
@@ -24,10 +31,16 @@ export async function getAggregatedNews(): Promise<NewsArticle[]> {
   //Ordena o array por data de publicação
   allNews.sort((a, b) => b.publishedAt.getTime() - a.publishedAt.getTime());
 
-  await setCache(allNews);
+  //Adiciona um slug em cada notícia
+  const newsWithSlugs = allNews.map((article) => ({
+    ...article,
+    slug: createSlug(article.title),
+  }));
+
+  await setCache(newsWithSlugs);
 
   console.log(
-    `Serviço: Total de ${allNews.length} notícias agregadas e ordenadas.`
+    `Serviço: Total de ${newsWithSlugs.length} notícias agregadas e ordenadas.`
   );
-  return allNews;
+  return newsWithSlugs;
 }

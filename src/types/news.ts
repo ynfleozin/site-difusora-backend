@@ -7,4 +7,5 @@ export interface NewsArticle {
     imageUrl?: string;
     author?: string;
     category?: string;
+    slug?: string;
 }
