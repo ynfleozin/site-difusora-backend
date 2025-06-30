@@ -24,5 +24,4 @@ app.use(errorHandler);
 
 app.listen(config.port, () => {
   console.log(`Servidor TypeScript rodando na porta ${config.port}`);
-  console.log(`Teste a API em: http://localhost:${config.port}/api/news`);
 });
