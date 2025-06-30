@@ -31,7 +31,7 @@ export async function scrapeCamara(): Promise<NewsArticle[]> {
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
     };
 
-    for (const link of articleLinks.slice(0, 5)) {
+    for (const link of articleLinks) {
       console.log(`Buscando artigo em: ${link}`);
       const { data: articleHtml } = await axios.get(link, { headers });
       const $$ = cheerio.load(articleHtml);
