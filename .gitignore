@@ -1,5 +1,6 @@
 node_modules
 *.log
 news-cache.json
+currencies-cache.json
 dist
 .env
