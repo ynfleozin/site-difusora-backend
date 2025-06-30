@@ -3,6 +3,9 @@ import { scrapeAgenciaBrasil } from "../scrapers/agenciaBrasilScraper";
 import { getCache, setCache } from "../cache/cacheManager";
 import type { NewsArticle } from "../types/news";
 
+const CACHE_KEY = 'news';
+const CACHE_TTL = 3600;
+
 function createSlug(text: string): string {
   return text
     .toLowerCase()
@@ -12,7 +15,7 @@ function createSlug(text: string): string {
 
 export async function getAggregatedNews(): Promise<NewsArticle[]> {
   //Acessa as notícias do cache primeiro
-  const cachedNews = await getCache();
+  const cachedNews = await getCache(CACHE_KEY, CACHE_TTL);
   if (cachedNews) {
     return cachedNews;
   }
@@ -37,7 +40,7 @@ export async function getAggregatedNews(): Promise<NewsArticle[]> {
     slug: createSlug(article.title),
   }));
 
-  await setCache(newsWithSlugs);
+  await setCache(CACHE_KEY, newsWithSlugs, CACHE_TTL);
 
   console.log(
     `Serviço: Total de ${newsWithSlugs.length} notícias agregadas e ordenadas.`
