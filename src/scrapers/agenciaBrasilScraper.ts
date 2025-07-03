@@ -1,5 +1,6 @@
 import Parser from "rss-parser";
 import type { NewsArticle } from "../types/news";
+import * as cheerio from 'cheerio';
 
 const rssFeedUrls = {
   nacional: "https://agenciabrasil.ebc.com.br/rss/geral/feed.xml",
@@ -36,15 +37,31 @@ export async function scrapeAgenciaBrasil(): Promise<NewsArticle[]> {
       const feed = await parser.parseURL(feedUrl);
 
       for (const item of feed.items) {
-        const contentHTML = item.content;
+        const rawContentHTML = item.content; 
         if (
           !item.link ||
           processedUrls.has(item.link) ||
           !item.title ||
-          !contentHTML
+          !rawContentHTML
         ) {
           continue;
         }
+
+        // --- INÍCIO DA LÓGICA DE LIMPEZA INTELIGENTE ---
+        const $ = cheerio.load(rawContentHTML); // Carregamos o HTML no Cheerio
+
+        // Removemos os elementos indesejados usando seus seletores
+        $('h3:contains("Notícias relacionadas:")').next('ul').remove(); // Remove a lista <ul> que vem depois do h3
+        $('h3:contains("Notícias relacionadas:")').remove(); // Remove o próprio <h3>
+        $("a:contains('Siga o perfil')").closest('p').remove(); // Remove o parágrafo inteiro com o link para seguir
+        $("img[src*='logo-agenciabrasil.svg']").closest('p').remove(); // Remove o parágrafo com o logo
+        $("img[src*='ebc.png']").remove(); // Remove os pixels de rastreamento
+        $("img[src*='ebc.gif']").remove();
+
+        // Extraímos o HTML que sobrou após a limpeza
+        const cleanedContentHTML = $.html();
+
+        // --- FIM DA LÓGICA DE LIMPEZA ---
 
         const finalCategory = item.category ? item.category._ : category;
 
@@ -53,7 +70,7 @@ export async function scrapeAgenciaBrasil(): Promise<NewsArticle[]> {
 
         allArticles.push({
           title: item.title,
-          contentHTML: contentHTML,
+          contentHTML: cleanedContentHTML,
           sourceUrl: item.link,
           sourceName: "Agência Brasil",
           publishedAt: item.pubDate ? new Date(item.pubDate) : new Date(),
