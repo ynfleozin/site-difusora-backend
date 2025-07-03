@@ -5,6 +5,7 @@ import { config } from "./config/index";
 
 import newsRoutes from "./api/routes/news";
 import currencyRoutes from "./api/routes/currencies";
+import weatherRoutes from "./api/routes/weather"
 
 const app = express();
 
@@ -14,6 +15,7 @@ app.use(express.json());
 
 app.use("/api/news", newsRoutes);
 app.use("/api/currencies", currencyRoutes);
+app.use("/api/weather", weatherRoutes)
 
 // Manipulador de erros
 const errorHandler: ErrorRequestHandler = (err, req, res, next) => {

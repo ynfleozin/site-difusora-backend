@@ -2,5 +2,6 @@ node_modules
 *.log
 news-cache.json
 currencies-cache.json
+weather_colatina-cache.json
 dist
 .env
