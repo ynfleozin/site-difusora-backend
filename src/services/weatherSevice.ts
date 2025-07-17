@@ -4,8 +4,7 @@ import { getCache, setCache } from "../cache/cacheManager";
 const CACHE_KEY = "weather_colatina";
 const CACHE_TTL = 900; // Cache de 15 minutos (900s)
 
-// **IMPORTANTE**: Substitua 'SUA_CHAVE_DE_API' pela chave que você pegou no site WeatherAPI
-const API_KEY = process.env.WEATHER_API_KEY || "SUA_CHAVE_DE_API";
+const API_KEY = process.env.WEATHER_API_KEY;
 const API_URL = `http://api.weatherapi.com/v1/current.json?key=${API_KEY}&q=Colatina&aqi=no`;
 
 export async function getWeather() {
