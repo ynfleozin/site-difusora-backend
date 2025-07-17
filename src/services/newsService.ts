@@ -3,7 +3,7 @@ import { scrapeAgenciaBrasil } from "../scrapers/agenciaBrasilScraper";
 import { getCache, setCache } from "../cache/cacheManager";
 import type { NewsArticle } from "../types/news";
 
-const CACHE_KEY = 'news';
+const CACHE_KEY = "news";
 const CACHE_TTL = 3600;
 
 function createSlug(text: string): string {
@@ -54,4 +54,33 @@ export async function getArticleBySlug(
   const allNews = await getAggregatedNews();
 
   return allNews.find((article) => article.slug === slug);
+}
+
+export async function getNewsByCategory(
+  category: string
+): Promise<NewsArticle[]> {
+  const allNews = await getAggregatedNews();
+
+  const filteredNews = allNews.filter(
+    (article) =>
+      article.category &&
+      article.category.toLowerCase() === category.toLowerCase()
+  );
+
+  console.log(
+    `Serviço: Encontradas ${filteredNews.length} notícias para a categoria "${category}".`
+  );
+
+  return filteredNews;
+}
+
+export async function getAvailableCategories(): Promise<string[]> {
+  const allNews = await getAggregatedNews();
+  const uniqueCategories = [
+    ...new Set(
+      allNews.map((article) => article.category).filter(Boolean) as string[]
+    ),
+  ];
+
+  return uniqueCategories.sort();
 }
