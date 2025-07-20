@@ -4,4 +4,5 @@ news-cache.json
 currencies-cache.json
 weather_colatina-cache.json
 dist
+src/config/firebase-admin-key.json
 .env

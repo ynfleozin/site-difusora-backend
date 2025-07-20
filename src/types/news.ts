@@ -1,11 +1,13 @@
 export interface NewsArticle {
-    title: string;
-    contentHTML: string;
-    sourceUrl: string;
-    sourceName: string;
-    publishedAt: Date;
-    imageUrl?: string;
-    author?: string;
-    category?: string;
-    slug?: string;
+  id?: string;
+  title: string;
+  body: string;
+  sourceUrl: string;
+  sourceName: string;
+  publishedAt: Date;
+  imageUrl?: string;
+  author?: string | null;
+  category?: string;
+  slug?: string;
+  description?: string;
 }

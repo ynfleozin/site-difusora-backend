@@ -32,7 +32,6 @@ export async function scrapeCamara(): Promise<NewsArticle[]> {
     };
 
     for (const link of articleLinks) {
-      console.log(`Buscando artigo em: ${link}`);
       const { data: articleHtml } = await axios.get(link, { headers });
       const $$ = cheerio.load(articleHtml);
 
@@ -43,15 +42,15 @@ export async function scrapeCamara(): Promise<NewsArticle[]> {
       articleBody.find("aside.l-acoes-apoio").remove();
       articleBody.find("p:contains('Da Redação')").remove();
       articleBody.find("p:contains('Reportagem')").remove();
-      const contentHTML = articleBody.html();
+      const bodyContent = articleBody.html();
 
-      if (title && contentHTML) {
+      if (title && bodyContent) {
         const publishedAtText = $$("p.g-artigo__data-hora").text();
 
         const dateTimeRegex = /(\d{2}\/\d{2}\/\d{4}).*?(\d{2}:\d{2})/;
         const match = publishedAtText.match(dateTimeRegex);
-        const category = $$('span.g-artigo__categoria').text().trim();
-        const imageUrl = $$('div.image-container img').attr('src');
+        const category = $$("span.g-artigo__categoria").text().trim();
+        const imageUrl = $$("div.image-container img").attr("src");
 
         let publishedAt = new Date();
 
@@ -65,14 +64,19 @@ export async function scrapeCamara(): Promise<NewsArticle[]> {
           publishedAt = new Date(isoDateString);
         }
 
+        const description = articleBody.text().trim().substring(0, 150) + "...";
+
         articles.push({
+          id: "",
           title,
-          contentHTML,
+          body: bodyContent,
           publishedAt,
           sourceUrl: link,
           sourceName: "Câmara dos Deputados",
           category: category,
           imageUrl: imageUrl,
+          description: description,
+          author: null,
         });
       }
     }

@@ -1,6 +1,6 @@
 import Parser from "rss-parser";
 import type { NewsArticle } from "../types/news";
-import * as cheerio from 'cheerio';
+import * as cheerio from "cheerio";
 
 const rssFeedUrls = {
   nacional: "https://agenciabrasil.ebc.com.br/rss/geral/feed.xml",
@@ -17,13 +17,13 @@ type FeedItem = {
   creator?: string;
   enclosure?: { url: string };
   category?: { _: string };
-  'imagem-destaque'?: string;
+  "imagem-destaque"?: string;
 };
 
 const parser = new Parser<object, FeedItem>({
   customFields: {
-    item: ['imagem-destaque'],
-  }
+    item: ["imagem-destaque"],
+  },
 });
 
 export async function scrapeAgenciaBrasil(): Promise<NewsArticle[]> {
@@ -33,11 +33,10 @@ export async function scrapeAgenciaBrasil(): Promise<NewsArticle[]> {
 
   for (const [category, feedUrl] of Object.entries(rssFeedUrls)) {
     try {
-      console.log(`Processando feed: ${category}...`);
       const feed = await parser.parseURL(feedUrl);
 
       for (const item of feed.items) {
-        const rawContentHTML = item.content; 
+        const rawContentHTML = item.content;
         if (
           !item.link ||
           processedUrls.has(item.link) ||
@@ -47,21 +46,21 @@ export async function scrapeAgenciaBrasil(): Promise<NewsArticle[]> {
           continue;
         }
 
-        // --- INÍCIO DA LÓGICA DE LIMPEZA INTELIGENTE ---
-        const $ = cheerio.load(rawContentHTML); // Carregamos o HTML no Cheerio
+        const $ = cheerio.load(rawContentHTML);
 
-        // Removemos os elementos indesejados usando seus seletores
-        $('h3:contains("Notícias relacionadas:")').next('ul').remove(); // Remove a lista <ul> que vem depois do h3
-        $('h3:contains("Notícias relacionadas:")').remove(); // Remove o próprio <h3>
-        $("a:contains('Siga o perfil')").closest('p').remove(); // Remove o parágrafo inteiro com o link para seguir
-        $("img[src*='logo-agenciabrasil.svg']").closest('p').remove(); // Remove o parágrafo com o logo
-        $("img[src*='ebc.png']").remove(); // Remove os pixels de rastreamento
+        $('h3:contains("Notícias relacionadas:")').next("ul").remove();
+        $('h3:contains("Notícias relacionadas:")').remove();
+        $("a:contains('Siga o perfil')").closest("p").remove();
+        $("img[src*='logo-agenciabrasil.svg']").closest("p").remove();
+        $("img[src*='ebc.png']").remove();
         $("img[src*='ebc.gif']").remove();
 
-        // Extraímos o HTML que sobrou após a limpeza
-        const cleanedContentHTML = $.html();
+        const cleanedBodyContent = $.html();
 
-        // --- FIM DA LÓGICA DE LIMPEZA ---
+        const description = cleanedBodyContent
+          ? cheerio.load(cleanedBodyContent).text().substring(0, 200).trim() +
+            "..."
+          : undefined;
 
         const finalCategory = item.category ? item.category._ : category;
 
@@ -69,14 +68,16 @@ export async function scrapeAgenciaBrasil(): Promise<NewsArticle[]> {
           finalCategory.charAt(0).toUpperCase() + finalCategory.slice(1);
 
         allArticles.push({
+          id: "",
           title: item.title,
-          contentHTML: cleanedContentHTML,
+          body: cleanedBodyContent,
           sourceUrl: item.link,
           sourceName: "Agência Brasil",
           publishedAt: item.pubDate ? new Date(item.pubDate) : new Date(),
-          imageUrl: item.enclosure?.url || item['imagem-destaque'],
-          author: item.creator,
+          imageUrl: item.enclosure?.url || item["imagem-destaque"],
+          author: item.creator || null,
           category: formattedCategory,
+          description: description,
         });
         processedUrls.add(item.link);
       }

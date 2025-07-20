@@ -1,6 +1,13 @@
 import { scrapeCamara } from "../scrapers/camaraScraper";
 import { scrapeAgenciaBrasil } from "../scrapers/agenciaBrasilScraper";
 import { getCache, setCache } from "../cache/cacheManager";
+
+import {
+  saveLocalNews,
+  getAllLocalNews,
+  saveScrapedNews,
+  getNewsBySlugFromFirestore,
+} from "../database/firestoreService";
 import type { NewsArticle } from "../types/news";
 
 const CACHE_KEY = "news";
@@ -14,36 +21,55 @@ function createSlug(text: string): string {
 }
 
 export async function getAggregatedNews(): Promise<NewsArticle[]> {
-  //Acessa as notícias do cache primeiro
   const cachedNews = await getCache(CACHE_KEY, CACHE_TTL);
   if (cachedNews) {
+    console.log("[Cache] Servindo dados agregados do cache.");
     return cachedNews;
   }
 
-  //Inicialização do Scraper caso não tenha cache válido
   console.log("Serviço: Buscando notícias de todas as fontes...");
-  //Roda os scrapers em paralelo
-  const [camaraNews, agenciaBrasilNews] = await Promise.all([
-    scrapeCamara(),
-    scrapeAgenciaBrasil(),
-  ]);
 
-  //Junta o retorno dos dois scrapers
-  const allNews = [...camaraNews, ...agenciaBrasilNews];
+  const saveScrapedNewsInBackground = async (articles: NewsArticle[]) => {
+    console.log(
+      `Iniciando salvamento de ${articles.length} notícias em segundo plano.`
+    );
+    const savePromises = articles.map((article) => {
+      const articleWithSlug = {
+        ...article,
+        slug: article.slug || createSlug(article.title),
+      };
+      return saveScrapedNews(articleWithSlug);
+    });
+    await Promise.all(savePromises);
+    console.log("Salvamento em segundo plano concluído.");
+  };
 
-  //Ordena o array por data de publicação
+  const [localNews, camaraNewsScraped, agenciaBrasilNewsScraped] =
+    await Promise.all([
+      getAllLocalNews(),
+      scrapeCamara(),
+      scrapeAgenciaBrasil(),
+    ]);
+
+  const allScrapedNews = [...camaraNewsScraped, ...agenciaBrasilNewsScraped];
+
+  if (allScrapedNews.length > 0) {
+    saveScrapedNewsInBackground(allScrapedNews);
+  }
+
+  const allNews = [...localNews, ...allScrapedNews];
+
   allNews.sort((a, b) => b.publishedAt.getTime() - a.publishedAt.getTime());
 
-  //Adiciona um slug em cada notícia
   const newsWithSlugs = allNews.map((article) => ({
     ...article,
-    slug: createSlug(article.title),
+    slug: article.slug || createSlug(article.title),
   }));
 
   await setCache(CACHE_KEY, newsWithSlugs, CACHE_TTL);
 
   console.log(
-    `Serviço: Total de ${newsWithSlugs.length} notícias agregadas e ordenadas.`
+    `Serviço: Total de ${newsWithSlugs.length} notícias agregadas e retornadas.`
   );
   return newsWithSlugs;
 }
@@ -51,26 +77,29 @@ export async function getAggregatedNews(): Promise<NewsArticle[]> {
 export async function getArticleBySlug(
   slug: string
 ): Promise<NewsArticle | undefined> {
+  // Tenta buscar no cache agregado primeiro
   const allNews = await getAggregatedNews();
+  let article = allNews.find((a) => a.slug === slug);
 
-  return allNews.find((article) => article.slug === slug);
+  if (!article) {
+    article = await getNewsBySlugFromFirestore(slug);
+  }
+
+  return article;
 }
 
 export async function getNewsByCategory(
   category: string
 ): Promise<NewsArticle[]> {
   const allNews = await getAggregatedNews();
-
   const filteredNews = allNews.filter(
     (article) =>
       article.category &&
       article.category.toLowerCase() === category.toLowerCase()
   );
-
   console.log(
     `Serviço: Encontradas ${filteredNews.length} notícias para a categoria "${category}".`
   );
-
   return filteredNews;
 }
 
@@ -81,6 +110,33 @@ export async function getAvailableCategories(): Promise<string[]> {
       allNews.map((article) => article.category).filter(Boolean) as string[]
     ),
   ];
-
   return uniqueCategories.sort();
+}
+
+export async function addLocalNewsArticle(
+  newArticleData: Omit<NewsArticle, "id">
+): Promise<NewsArticle> {
+  const publishedAtDate = newArticleData.publishedAt
+    ? new Date(newArticleData.publishedAt)
+    : new Date();
+
+  const articleToSave: NewsArticle = {
+    ...newArticleData,
+    id: "",
+    publishedAt: publishedAtDate,
+    slug: newArticleData.slug || createSlug(newArticleData.title),
+    author: newArticleData.author || null,
+    sourceName: "Local",
+    sourceUrl: "",
+  };
+
+  const savedArticle = await saveLocalNews(articleToSave);
+
+  await setCache(CACHE_KEY, null, 0);
+
+  console.log(
+    "Notícia local adicionada no Firestore e cache invalidado:",
+    savedArticle
+  );
+  return savedArticle;
 }

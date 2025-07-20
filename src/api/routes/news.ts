@@ -6,9 +6,12 @@ import {
   getArticleBySlug,
   getNewsByCategory,
   getAvailableCategories,
+  addLocalNewsArticle,
 } from "../../services/newsService";
 
 const router = Router();
+
+// GETS
 
 router.get("/", async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -59,6 +62,20 @@ router.get("/:slug", async (req, res, next) => {
       res.status(404).json({ message: "Notícia não encontrada" });
     }
   } catch (error) {
+    next(error);
+  }
+});
+
+// POST
+
+router.post("/", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const localNewsData = req.body;
+    console.log("Recebida requisição para adicionar notícia:", localNewsData);
+    const addedNews = await addLocalNewsArticle(localNewsData);
+    res.status(201).json(addedNews);
+  } catch (error) {
+    console.error("Erro ao adicionar notícia:", error);
     next(error);
   }
 });
