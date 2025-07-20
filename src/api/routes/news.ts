@@ -7,6 +7,7 @@ import {
   getNewsByCategory,
   getAvailableCategories,
   addLocalNewsArticle,
+  getLocalNews,
 } from "../../services/newsService";
 
 const router = Router();
@@ -23,6 +24,19 @@ router.get("/", async (req: Request, res: Response, next: NextFunction) => {
     next(error);
   }
 });
+
+router.get(
+  "/local",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      console.log("Recebida requisição na rota /api/news/local.");
+      const news = await getLocalNews();
+      res.json(news);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
 router.get(
   "/category/:categoryName",

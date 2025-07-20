@@ -113,6 +113,16 @@ export async function getAvailableCategories(): Promise<string[]> {
   return uniqueCategories.sort();
 }
 
+export async function getLocalNews(): Promise<NewsArticle[]> {
+  console.log("Serviço: Buscando apenas notícias locais do Firestore...");
+  const localNews = await getAllLocalNews();
+
+  localNews.sort((a, b) => b.publishedAt.getTime() - a.publishedAt.getTime());
+
+  console.log(`Serviço: Encontradas ${localNews.length} notícias locais.`);
+  return localNews;
+}
+
 export async function addLocalNewsArticle(
   newArticleData: Omit<NewsArticle, "id">
 ): Promise<NewsArticle> {
