@@ -9,6 +9,7 @@ import {
   addLocalNewsArticle,
   getLocalNews,
 } from "../../services/newsService";
+import { authMiddleware } from "../middleware/authMiddleware";
 
 const router = Router();
 
@@ -82,14 +83,12 @@ router.get("/:slug", async (req, res, next) => {
 
 // POST
 
-router.post("/", async (req: Request, res: Response, next: NextFunction) => {
+router.post("/", authMiddleware, async (req, res, next) => {
   try {
     const localNewsData = req.body;
-    console.log("Recebida requisição para adicionar notícia:", localNewsData);
     const addedNews = await addLocalNewsArticle(localNewsData);
     res.status(201).json(addedNews);
   } catch (error) {
-    console.error("Erro ao adicionar notícia:", error);
     next(error);
   }
 });
