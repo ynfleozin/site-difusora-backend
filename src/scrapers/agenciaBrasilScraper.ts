@@ -3,10 +3,19 @@ import type { NewsArticle } from "../types/news";
 import * as cheerio from "cheerio";
 
 const rssFeedUrls = {
-  nacional: "https://agenciabrasil.ebc.com.br/rss/geral/feed.xml",
+  geral: "https://agenciabrasil.ebc.com.br/rss/geral/feed.xml",
+  internacional: "https://agenciabrasil.ebc.com.br/rss/internacional/feed.xml",
   politica: "https://agenciabrasil.ebc.com.br/rss/politica/feed.xml",
   economia: "https://agenciabrasil.ebc.com.br/rss/economia/feed.xml",
+  educacao: "https://agenciabrasil.ebc.com.br/rss/educacao/feed.xml",
   esportes: "https://agenciabrasil.ebc.com.br/rss/esportes/feed.xml",
+  saude: "https://agenciabrasil.ebc.com.br/rss/saude/feed.xml",
+  "meio-ambiente":
+    "https://agenciabrasil.ebc.com.br/rss/meio-ambiente/feed.xml",
+  "direitos-humanos":
+    "https://agenciabrasil.ebc.com.br/rss/direitos-humanos/feed.xml",
+  cultura: "https://agenciabrasil.ebc.com.br/rss/cultura/feed.xml",
+  justica: "https://agenciabrasil.ebc.com.br/rss/justica/feed.xml",
 };
 
 type FeedItem = {
