@@ -12,7 +12,6 @@ import currencyRoutes from "./api/routes/currencies";
 import weatherRoutes from "./api/routes/weather";
 import authRoutes from "./api/routes/auth";
 import bannerRoutes from "./api/routes/banner";
-import { populateInitialBanners } from "./database/firestoreService";
 
 const app = express();
 
@@ -39,7 +38,6 @@ app.listen(config.port, () => {
     .set({ timestamp: new Date() })
     .then(() => {
       console.log("Firestore connection test successful!");
-      populateInitialBanners();
     })
     .catch((err) => {
       console.error("Firestore connection test failed:", err);

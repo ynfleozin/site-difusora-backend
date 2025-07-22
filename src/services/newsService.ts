@@ -1,6 +1,5 @@
 import { scrapeCamara } from "../scrapers/camaraScraper";
 import { scrapeAgenciaBrasil } from "../scrapers/agenciaBrasilScraper";
-import { getCache, setCache } from "../cache/cacheManager";
 
 import {
   saveLocalNews,
@@ -21,12 +20,6 @@ function createSlug(text: string): string {
 }
 
 export async function getAggregatedNews(): Promise<NewsArticle[]> {
-  const cachedNews = await getCache(CACHE_KEY, CACHE_TTL);
-  if (cachedNews) {
-    console.log("[Cache] Servindo dados agregados do cache.");
-    return cachedNews;
-  }
-
   console.log("Serviço: Buscando notícias de todas as fontes...");
 
   const saveScrapedNewsInBackground = async (articles: NewsArticle[]) => {
@@ -65,8 +58,6 @@ export async function getAggregatedNews(): Promise<NewsArticle[]> {
     ...article,
     slug: article.slug || createSlug(article.title),
   }));
-
-  await setCache(CACHE_KEY, newsWithSlugs, CACHE_TTL);
 
   console.log(
     `Serviço: Total de ${newsWithSlugs.length} notícias agregadas e retornadas.`
@@ -132,7 +123,6 @@ export async function addLocalNewsArticle(
 
   const articleToSave: NewsArticle = {
     ...newArticleData,
-    id: "",
     publishedAt: publishedAtDate,
     slug: newArticleData.slug || createSlug(newArticleData.title),
     author: newArticleData.author || null,
@@ -141,8 +131,6 @@ export async function addLocalNewsArticle(
   };
 
   const savedArticle = await saveLocalNews(articleToSave);
-
-  await setCache(CACHE_KEY, null, 0);
 
   console.log(
     "Notícia local adicionada no Firestore e cache invalidado:",

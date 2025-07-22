@@ -67,7 +67,6 @@ export async function scrapeCamara(): Promise<NewsArticle[]> {
         const description = articleBody.text().trim().substring(0, 150) + "...";
 
         articles.push({
-          id: "",
           title,
           body: bodyContent,
           publishedAt,

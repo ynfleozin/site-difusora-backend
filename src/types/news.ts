@@ -1,5 +1,4 @@
 export interface NewsArticle {
-  id?: string;
   title: string;
   body: string;
   sourceUrl: string;

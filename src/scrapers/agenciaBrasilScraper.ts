@@ -77,7 +77,6 @@ export async function scrapeAgenciaBrasil(): Promise<NewsArticle[]> {
           finalCategory.charAt(0).toUpperCase() + finalCategory.slice(1);
 
         allArticles.push({
-          id: "",
           title: item.title,
           body: cleanedBodyContent,
           sourceUrl: item.link,

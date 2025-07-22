@@ -17,9 +17,7 @@ const BANNERS_COLLECTION = "banners";
 export async function saveLocalNews(
   article: NewsArticle
 ): Promise<NewsArticle> {
-  const docRef = article.id
-    ? db.collection(LOCAL_NEWS_COLLECTION).doc(article.id)
-    : db.collection(LOCAL_NEWS_COLLECTION).doc();
+  const docRef = db.collection(LOCAL_NEWS_COLLECTION).doc();
 
   const articleToSave = {
     ...article,
@@ -31,7 +29,7 @@ export async function saveLocalNews(
 
   await docRef.set(articleToSave, { merge: true });
 
-  return { ...article, id: docRef.id };
+  return article;
 }
 
 export async function getAllLocalNews(): Promise<NewsArticle[]> {
@@ -44,7 +42,6 @@ export async function getAllLocalNews(): Promise<NewsArticle[]> {
         data.publishedAt as admin.firestore.Timestamp
       ).toDate();
       news.push({
-        id: doc.id,
         title: data.title,
         body: data.body,
         sourceUrl: data.sourceUrl,
@@ -91,7 +88,7 @@ export async function saveScrapedNews(
 
   await docRef.set(articleToSave, { merge: true });
 
-  return { ...article, id: docRef.id };
+  return article;
 }
 
 export async function getAllScrapedNews(): Promise<NewsArticle[]> {
@@ -104,7 +101,6 @@ export async function getAllScrapedNews(): Promise<NewsArticle[]> {
         data.publishedAt as admin.firestore.Timestamp
       ).toDate();
       news.push({
-        id: doc.id,
         title: data.title,
         body: data.body,
         sourceUrl: data.sourceUrl,
@@ -142,7 +138,6 @@ export async function getNewsBySlugFromFirestore(
       ).toDate();
       console.log(`Notícia local com slug "${slug}" encontrada.`);
       return {
-        id: doc.id,
         title: data.title,
         body: data.body,
         sourceUrl: data.sourceUrl,
@@ -169,7 +164,6 @@ export async function getNewsBySlugFromFirestore(
       ).toDate();
       console.log(`Notícia raspada com slug "${slug}" encontrada.`);
       return {
-        id: doc.id,
         title: data.title,
         body: data.body,
         sourceUrl: data.sourceUrl,
@@ -242,28 +236,4 @@ export async function saveBanner(banner: Banner): Promise<Banner> {
   await docRef.set(banner, { merge: true });
 
   return { ...banner, id: docRef.id };
-}
-
-export async function populateInitialBanners() {
-  const initialBanners: Banner[] = [
-    {
-      id: "ad-banner-1",
-      name: "Banner Horizontal (após cotações)",
-      imageUrl: "assets/imgs/ad-banner.jpg",
-      linkUrl: "https://www.exemplo.com/anuncio1",
-      altText: "Anúncio 1",
-    },
-    {
-      id: "ad-banner-2",
-      name: "Banner Horizontal (após notícias locais)",
-      imageUrl: "assets/imgs/ad-banner.jpg",
-      linkUrl: "https://www.exemplo.com/anuncio2",
-      altText: "Anúncio 2",
-    },
-  ];
-
-  for (const banner of initialBanners) {
-    await saveBanner(banner);
-  }
-  console.log("Banners iniciais populados no Firestore (se não existirem).");
 }
