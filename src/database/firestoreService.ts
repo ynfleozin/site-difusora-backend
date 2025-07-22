@@ -2,8 +2,17 @@ import { db } from "../config/firebase";
 import * as admin from "firebase-admin";
 import { NewsArticle } from "../types/news";
 
+export interface Banner {
+  id?: string;
+  name: string;
+  imageUrl: string;
+  linkUrl?: string;
+  altText?: string;
+}
+
 const LOCAL_NEWS_COLLECTION = "local-news";
 const SCRAPED_NEWS_COLLECTION = "scraped-news";
+const BANNERS_COLLECTION = "banners";
 
 export async function saveLocalNews(
   article: NewsArticle
@@ -184,4 +193,77 @@ export async function getNewsBySlugFromFirestore(
     );
     return undefined;
   }
+}
+
+// Banners
+
+export async function getAllBanners(): Promise<Banner[]> {
+  try {
+    const snapshot = await db.collection(BANNERS_COLLECTION).get();
+    const banners: Banner[] = [];
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      banners.push({
+        id: doc.id,
+        name: data.name,
+        imageUrl: data.imageUrl,
+        linkUrl: data.linkUrl || "#",
+        altText: data.altText || "Anúncio",
+      });
+    });
+    console.log(`Encontrados ${banners.length} banners no Firestore.`);
+    return banners;
+  } catch (error) {
+    console.error("Erro ao buscar banners do Firestore:", error);
+    return [];
+  }
+}
+
+export async function updateBannerImage(
+  id: string,
+  newImageUrl: string
+): Promise<boolean> {
+  try {
+    const bannerRef = db.collection(BANNERS_COLLECTION).doc(id);
+    await bannerRef.update({ imageUrl: newImageUrl });
+    console.log(`Banner ${id} atualizado com a nova imagem: ${newImageUrl}`);
+    return true;
+  } catch (error) {
+    console.error(`Erro ao atualizar o banner ${id} no Firestore:`, error);
+    return false;
+  }
+}
+
+export async function saveBanner(banner: Banner): Promise<Banner> {
+  const docRef = banner.id
+    ? db.collection(BANNERS_COLLECTION).doc(banner.id)
+    : db.collection(BANNERS_COLLECTION).doc();
+
+  await docRef.set(banner, { merge: true });
+
+  return { ...banner, id: docRef.id };
+}
+
+export async function populateInitialBanners() {
+  const initialBanners: Banner[] = [
+    {
+      id: "ad-banner-1",
+      name: "Banner Horizontal (após cotações)",
+      imageUrl: "assets/imgs/ad-banner.jpg",
+      linkUrl: "https://www.exemplo.com/anuncio1",
+      altText: "Anúncio 1",
+    },
+    {
+      id: "ad-banner-2",
+      name: "Banner Horizontal (após notícias locais)",
+      imageUrl: "assets/imgs/ad-banner.jpg",
+      linkUrl: "https://www.exemplo.com/anuncio2",
+      altText: "Anúncio 2",
+    },
+  ];
+
+  for (const banner of initialBanners) {
+    await saveBanner(banner);
+  }
+  console.log("Banners iniciais populados no Firestore (se não existirem).");
 }

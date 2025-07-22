@@ -11,6 +11,8 @@ import newsRoutes from "./api/routes/news";
 import currencyRoutes from "./api/routes/currencies";
 import weatherRoutes from "./api/routes/weather";
 import authRoutes from "./api/routes/auth";
+import bannerRoutes from "./api/routes/banner";
+import { populateInitialBanners } from "./database/firestoreService";
 
 const app = express();
 
@@ -21,6 +23,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/news", newsRoutes);
 app.use("/api/currencies", currencyRoutes);
 app.use("/api/weather", weatherRoutes);
+app.use("/api/banners", bannerRoutes);
 
 // Manipulador de erros
 const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
@@ -36,6 +39,7 @@ app.listen(config.port, () => {
     .set({ timestamp: new Date() })
     .then(() => {
       console.log("Firestore connection test successful!");
+      populateInitialBanners();
     })
     .catch((err) => {
       console.error("Firestore connection test failed:", err);
