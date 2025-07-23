@@ -39,9 +39,12 @@ export async function scrapeCamara(): Promise<NewsArticle[]> {
         .text()
         .trim();
       const articleBody = $$("div.g-artigo__texto-principal");
+
+      // Remove elementos indesejados
       articleBody.find("aside.l-acoes-apoio").remove();
       articleBody.find("p:contains('Da Redação')").remove();
       articleBody.find("p:contains('Reportagem')").remove();
+
       const bodyContent = articleBody.html();
 
       if (title && bodyContent) {
@@ -64,7 +67,20 @@ export async function scrapeCamara(): Promise<NewsArticle[]> {
           publishedAt = new Date(isoDateString);
         }
 
-        const description = articleBody.text().trim().substring(0, 150) + "...";
+        let description = "";
+        const firstParagraph = articleBody
+          .find("p")
+          .filter((_, el) => {
+            return $$(el).text().trim().length > 20;
+          })
+          .first();
+
+        if (firstParagraph.length > 0) {
+          description = $$(firstParagraph).text().trim();
+          if (description.length > 150) {
+            description = description.substring(0, 150).trim() + "...";
+          }
+        }
 
         articles.push({
           title,

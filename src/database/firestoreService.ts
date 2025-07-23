@@ -54,7 +54,6 @@ export async function getAllLocalNews(): Promise<NewsArticle[]> {
         slug: data.slug,
       });
     });
-    console.log(`Encontradas ${news.length} notícias locais no Firestore.`);
     return news;
   } catch (error) {
     console.error("Erro ao buscar notícias locais do Firestore:", error);
@@ -113,7 +112,6 @@ export async function getAllScrapedNews(): Promise<NewsArticle[]> {
         slug: data.slug,
       });
     });
-    console.log(`Encontradas ${news.length} notícias raspadas no Firestore.`);
     return news;
   } catch (error) {
     console.error("Erro ao buscar notícias raspadas do Firestore:", error);
@@ -206,7 +204,6 @@ export async function getAllBanners(): Promise<Banner[]> {
         altText: data.altText || "Anúncio",
       });
     });
-    console.log(`Encontrados ${banners.length} banners no Firestore.`);
     return banners;
   } catch (error) {
     console.error("Erro ao buscar banners do Firestore:", error);
@@ -221,7 +218,6 @@ export async function updateBannerImage(
   try {
     const bannerRef = db.collection(BANNERS_COLLECTION).doc(id);
     await bannerRef.update({ imageUrl: newImageUrl });
-    console.log(`Banner ${id} atualizado com a nova imagem: ${newImageUrl}`);
     return true;
   } catch (error) {
     console.error(`Erro ao atualizar o banner ${id} no Firestore:`, error);

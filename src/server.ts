@@ -33,13 +33,4 @@ app.use(errorHandler);
 
 app.listen(config.port, () => {
   console.log(`Servidor TypeScript rodando na porta ${config.port}`);
-  db.collection("test")
-    .doc("init")
-    .set({ timestamp: new Date() })
-    .then(() => {
-      console.log("Firestore connection test successful!");
-    })
-    .catch((err) => {
-      console.error("Firestore connection test failed:", err);
-    });
 });
