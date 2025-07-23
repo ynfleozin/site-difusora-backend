@@ -43,6 +43,7 @@ export async function getAllLocalNews(): Promise<NewsArticle[]> {
       ).toDate();
       news.push({
         title: data.title,
+        description: data.description,
         body: data.body,
         sourceUrl: data.sourceUrl,
         sourceName: data.sourceName,
