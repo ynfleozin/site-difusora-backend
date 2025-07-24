@@ -1,9 +1,14 @@
 import * as admin from "firebase-admin";
-import fs from "fs";
-import path from "path";
 
-const serviceAccountPath = path.resolve(__dirname, "./firebase-admin-key.json");
-const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, "utf-8"));
+const firebaseAdminKey = process.env.FIREBASE_ADMIN_KEY;
+
+if (!firebaseAdminKey) {
+  throw new Error(
+    "FIREBASE_ADMIN_KEY não foi definida nas variáveis de ambiente."
+  );
+}
+
+const serviceAccount = JSON.parse(firebaseAdminKey);
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
@@ -11,4 +16,5 @@ admin.initializeApp({
 
 const db = admin.firestore();
 console.log("Firebase inicializado e conectado ao Firestore");
+
 export { db };
