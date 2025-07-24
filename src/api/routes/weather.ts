@@ -1,18 +1,19 @@
-import {Router} from 'express';
+import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
-import { getWeather } from '../../services/weatherSevice';
+import { getLatestWeatherReading } from '../../database/firestoreService';
 
 const router = Router();
 
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
-    try{
-        const quotes = await getWeather();
-        if(quotes){
-            res.json(quotes);
-        }else {
-            res.status(500).json({message: 'Não foi possível obter informações sobre o clima no momento'});
+    try {
+        const weatherData = await getLatestWeatherReading();
+        
+        if (weatherData) {
+            res.json(weatherData);
+        } else {
+            res.status(404).json({ message: 'Nenhuma informação sobre o clima encontrada.' });
         }
-    }catch(error){
+    } catch (error) {
         next(error);
     }
 });

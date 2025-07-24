@@ -10,6 +10,7 @@ import { config } from "./config/index";
 
 import { runScrapingJob } from "./jobs/newsScraperJob";
 import { runCurrencyUpdateJob } from "./jobs/currencyUpdaterJob";
+import { runWeatherUpdateJob } from "./jobs/weatherUpdaterJob";
 import newsRoutes from "./api/routes/news";
 import currencyRoutes from "./api/routes/currencies";
 import weatherRoutes from "./api/routes/weather";
@@ -39,21 +40,33 @@ app.listen(config.port, () => {
 });
 
 // Jobs
-cron.schedule('0 * * * *', () => {
-  console.log("⏰ Agendamento do cron: Executando o job de scraping de notícias...");
+cron.schedule("0 * * * *", () => {
+  console.log(
+    "⏰ Agendamento do cron: Executando o job de scraping de notícias..."
+  );
   runScrapingJob();
 });
 
-cron.schedule('*/15 * * * *', () => {
-  console.log("⏰ Agendamento do cron: Executando o job de atualização de cotações...");
+cron.schedule("*/15 * * * *", () => {
+  console.log(
+    "⏰ Agendamento do cron: Executando o job de atualização de cotações..."
+  );
   runCurrencyUpdateJob();
 });
 
+// Novo job para o clima
+cron.schedule("*/15 * * * *", () => {
+  console.log(
+    "⏰ Agendamento do cron: Executando o job de atualização do clima..."
+  );
+  runWeatherUpdateJob();
+});
 
 app.listen(config.port, () => {
   console.log(`Servidor TypeScript rodando na porta ${config.port}`);
-  
+
   console.log("🚀 Servidor iniciado. Executando jobs pela primeira vez...");
   runScrapingJob();
   runCurrencyUpdateJob();
+  runWeatherUpdateJob();
 });

@@ -1,26 +1,35 @@
 import axios from "axios";
+import { WeatherData } from "../types/weather";
 
-const CACHE_KEY = "weather_colatina";
-const CACHE_TTL = 900; // Cache de 15 minutos (900s)
+const API_KEY = process.env.OPENWEATHER_API_KEY;
+const CITY_ID = "3465944";
+const API_URL = `https://api.openweathermap.org/data/2.5/weather?id=${CITY_ID}&appid=${API_KEY}`;
 
-const API_KEY = process.env.WEATHER_API_KEY;
-const API_URL = `http://api.weatherapi.com/v1/current.json?key=${API_KEY}&q=Colatina&aqi=no`;
+const kelvinToCelsius = (kelvin: number): number => {
+  return parseFloat((kelvin - 273.15).toFixed(1));
+};
 
-export async function getWeather() {
-  console.log("Serviço de Tempo: Buscando previsão da API externa...");
+export async function fetchWeatherFromAPI(): Promise<WeatherData | null> {
+  console.log(
+    "Serviço de Tempo: Buscando previsão da API externa (OpenWeatherMap)..."
+  );
   try {
     const response = await axios.get(API_URL);
-    const weatherData = {
-      location: `${response.data.location.name}, ${response.data.location.region}`,
-      temperature: response.data.current.temp_c,
-      condition: response.data.current.condition.text,
-      humidity: response.data.current.humidity,
-      icon: `https:${response.data.current.condition.icon}`,
+    const apiData = response.data;
+
+    const weatherData: WeatherData = {
+      location: apiData.name,
+      temperature: kelvinToCelsius(apiData.main.temp),
+      feelsLike: kelvinToCelsius(apiData.main.feels_like),
+      condition: apiData.weather[0]?.description || "Sem descrição",
+      humidity: apiData.main.humidity,
+      iconUrl: `https://openweathermap.org/img/wn/${apiData.weather[0].icon}@2x.png`,
+      recordedAt: new Date(apiData.dt * 1000),
     };
 
     return weatherData;
   } catch (error) {
-    console.error("Erro ao buscar previsão do tempo:", error);
+    console.error("Erro ao buscar previsão do tempo da API:", error);
     return null;
   }
 }

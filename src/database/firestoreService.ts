@@ -2,6 +2,7 @@ import { db } from "../config/firebase";
 import * as admin from "firebase-admin";
 import { NewsArticle } from "../types/news";
 import { CurrencyQuotes } from "../types/currency";
+import { WeatherData } from "../types/weather";
 
 export interface Banner {
   id?: string;
@@ -14,6 +15,8 @@ export interface Banner {
 const LOCAL_NEWS_COLLECTION = "local-news";
 const SCRAPED_NEWS_COLLECTION = "scraped-news";
 const BANNERS_COLLECTION = "banners";
+const CURRENCIES_COLLECTION = "currencies";
+const WEATHER_COLLECTION = "weather";
 
 export async function saveLocalNews(
   article: NewsArticle
@@ -238,14 +241,14 @@ export async function saveBanner(banner: Banner): Promise<Banner> {
 
 // Cotações
 
-const CURRENCIES_COLLECTION = "currencies";
-
-export async function saveCurrencyQuotes(quotes: CurrencyQuotes): Promise<void> {
+export async function saveCurrencyQuotes(
+  quotes: CurrencyQuotes
+): Promise<void> {
   try {
     const docRef = db.collection(CURRENCIES_COLLECTION).doc("latest");
     await docRef.set({
       ...quotes,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(), 
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
     console.log("Cotações de moedas salvas com sucesso no Firestore.");
   } catch (error) {
@@ -259,14 +262,70 @@ export async function getLatestCurrencyQuotes(): Promise<CurrencyQuotes | null> 
     const doc = await docRef.get();
 
     if (!doc.exists) {
-      console.warn("Nenhum documento de cotações ('latest') encontrado no Firestore.");
+      console.warn(
+        "Nenhum documento de cotações ('latest') encontrado no Firestore."
+      );
       return null;
     }
 
-    const { updatedAt, ...quotes } = doc.data() as CurrencyQuotes & { updatedAt: admin.firestore.Timestamp };
+    const { updatedAt, ...quotes } = doc.data() as CurrencyQuotes & {
+      updatedAt: admin.firestore.Timestamp;
+    };
     return quotes;
   } catch (error) {
     console.error("Erro ao buscar cotações do Firestore:", error);
+    return null;
+  }
+}
+
+// Clima
+
+export async function saveWeatherReading(reading: WeatherData): Promise<void> {
+  try {
+    const docRef = db.collection(WEATHER_COLLECTION).doc(); // Gera um ID automático
+
+    const readingToSave = {
+      ...reading,
+      recordedAt: admin.firestore.Timestamp.fromDate(reading.recordedAt),
+    };
+
+    await docRef.set(readingToSave);
+    console.log("Dados do clima salvos com sucesso no Firestore.");
+  } catch (error) {
+    console.error("Erro ao salvar dados do clima no Firestore:", error);
+  }
+}
+
+export async function getLatestWeatherReading(): Promise<WeatherData | null> {
+  try {
+    const snapshot = await db
+      .collection(WEATHER_COLLECTION)
+      .orderBy("recordedAt", "desc")
+      .limit(1)
+      .get();
+
+    if (snapshot.empty) {
+      console.warn("Nenhum registro de clima encontrado no Firestore.");
+      return null;
+    }
+
+    const doc = snapshot.docs[0];
+    const data = doc.data();
+
+    const recordedAt = (data.recordedAt as admin.firestore.Timestamp).toDate();
+
+    return {
+      id: doc.id,
+      location: data.location,
+      temperature: data.temperature,
+      feelsLike: data.feelsLike,
+      condition: data.condition,
+      humidity: data.humidity,
+      iconUrl: data.iconUrl,
+      recordedAt: recordedAt,
+    };
+  } catch (error) {
+    console.error("Erro ao buscar dados do clima do Firestore:", error);
     return null;
   }
 }
