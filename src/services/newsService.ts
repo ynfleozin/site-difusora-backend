@@ -1,16 +1,10 @@
-import { scrapeCamara } from "../scrapers/camaraScraper";
-import { scrapeAgenciaBrasil } from "../scrapers/agenciaBrasilScraper";
-
 import {
   saveLocalNews,
   getAllLocalNews,
-  saveScrapedNews,
   getNewsBySlugFromFirestore,
+  getAllScrapedNews,
 } from "../database/firestoreService";
 import type { NewsArticle } from "../types/news";
-
-const CACHE_KEY = "news";
-const CACHE_TTL = 3600;
 
 function createSlug(text: string): string {
   return text
@@ -20,37 +14,14 @@ function createSlug(text: string): string {
 }
 
 export async function getAggregatedNews(): Promise<NewsArticle[]> {
-  console.log("Serviço: Buscando notícias de todas as fontes...");
+  console.log("Serviço: Buscando notícias agregadas do Firestore...");
 
-  const saveScrapedNewsInBackground = async (articles: NewsArticle[]) => {
-    console.log(
-      `Iniciando salvamento de ${articles.length} notícias em segundo plano.`
-    );
-    const savePromises = articles.map((article) => {
-      const articleWithSlug = {
-        ...article,
-        slug: article.slug || createSlug(article.title),
-      };
-      return saveScrapedNews(articleWithSlug);
-    });
-    await Promise.all(savePromises);
-    console.log("Salvamento em segundo plano concluído.");
-  };
+  const [localNews, scrapedNews] = await Promise.all([
+    getAllLocalNews(),
+    getAllScrapedNews(), 
+  ]);
 
-  const [localNews, camaraNewsScraped, agenciaBrasilNewsScraped] =
-    await Promise.all([
-      getAllLocalNews(),
-      scrapeCamara(),
-      scrapeAgenciaBrasil(),
-    ]);
-
-  const allScrapedNews = [...camaraNewsScraped, ...agenciaBrasilNewsScraped];
-
-  if (allScrapedNews.length > 0) {
-    saveScrapedNewsInBackground(allScrapedNews);
-  }
-
-  const allNews = [...localNews, ...allScrapedNews];
+  const allNews = [...localNews, ...scrapedNews];
 
   allNews.sort((a, b) => b.publishedAt.getTime() - a.publishedAt.getTime());
 
@@ -60,7 +31,7 @@ export async function getAggregatedNews(): Promise<NewsArticle[]> {
   }));
 
   console.log(
-    `Serviço: Total de ${newsWithSlugs.length} notícias agregadas e retornadas.`
+    `Serviço: Total de ${newsWithSlugs.length} notícias retornadas do banco de dados.`
   );
   return newsWithSlugs;
 }
@@ -68,34 +39,23 @@ export async function getAggregatedNews(): Promise<NewsArticle[]> {
 export async function getArticleBySlug(
   slug: string
 ): Promise<NewsArticle | undefined> {
-  // Tenta buscar no cache agregado primeiro
-  const allNews = await getAggregatedNews();
-  let article = allNews.find((a) => a.slug === slug);
-
-  if (!article) {
-    article = await getNewsBySlugFromFirestore(slug);
-  }
-
-  return article;
+  console.log(`Serviço: Buscando artigo pelo slug "${slug}" diretamente no Firestore.`);
+  return await getNewsBySlugFromFirestore(slug);
 }
 
 export async function getNewsByCategory(
   category: string
 ): Promise<NewsArticle[]> {
-  const allNews = await getAggregatedNews();
-  const filteredNews = allNews.filter(
+  const allNews = await getAggregatedNews(); 
+  return allNews.filter(
     (article) =>
       article.category &&
       article.category.toLowerCase() === category.toLowerCase()
   );
-  console.log(
-    `Serviço: Encontradas ${filteredNews.length} notícias para a categoria "${category}".`
-  );
-  return filteredNews;
 }
 
 export async function getAvailableCategories(): Promise<string[]> {
-  const allNews = await getAggregatedNews();
+  const allNews = await getAggregatedNews(); 
   const uniqueCategories = [
     ...new Set(
       allNews.map((article) => article.category).filter(Boolean) as string[]

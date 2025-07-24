@@ -4,9 +4,12 @@ dotenv.config();
 import express from "express";
 import type { ErrorRequestHandler } from "express";
 import cors from "cors";
+import cron from "node-cron";
+
 import { config } from "./config/index";
 import { db } from "./config/firebase";
 
+import { runScrapingJob } from "./jobs/newsScraper.Job";
 import newsRoutes from "./api/routes/news";
 import currencyRoutes from "./api/routes/currencies";
 import weatherRoutes from "./api/routes/weather";
@@ -33,4 +36,16 @@ app.use(errorHandler);
 
 app.listen(config.port, () => {
   console.log(`Servidor TypeScript rodando na porta ${config.port}`);
+});
+
+cron.schedule('0 * * * *', () => {
+  console.log("Agendamento do cron: Executando o job de scraping...");
+  runScrapingJob();
+});
+
+app.listen(config.port, () => {
+  console.log(`Servidor TypeScript rodando na porta ${config.port}`);
+  
+  console.log("Servidor iniciado. Executando o job de scraping.");
+  runScrapingJob();
 });
