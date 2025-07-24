@@ -11,11 +11,13 @@ import { config } from "./config/index";
 import { runScrapingJob } from "./jobs/newsScraperJob";
 import { runCurrencyUpdateJob } from "./jobs/currencyUpdaterJob";
 import { runWeatherUpdateJob } from "./jobs/weatherUpdaterJob";
+import { runCoffeeQuotesUpdateJob } from "./jobs/coffeeUpdaterJob";
 import newsRoutes from "./api/routes/news";
 import currencyRoutes from "./api/routes/currencies";
 import weatherRoutes from "./api/routes/weather";
 import authRoutes from "./api/routes/auth";
 import bannerRoutes from "./api/routes/banner";
+import coffeRoutes from "./api/routes/coffee";
 
 const app = express();
 
@@ -27,6 +29,7 @@ app.use("/api/news", newsRoutes);
 app.use("/api/currencies", currencyRoutes);
 app.use("/api/weather", weatherRoutes);
 app.use("/api/banners", bannerRoutes);
+app.use("/api/coffee", coffeRoutes);
 
 // Manipulador de erros
 const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
@@ -54,12 +57,16 @@ cron.schedule("*/15 * * * *", () => {
   runCurrencyUpdateJob();
 });
 
-// Novo job para o clima
 cron.schedule("*/15 * * * *", () => {
   console.log(
     "⏰ Agendamento do cron: Executando o job de atualização do clima..."
   );
   runWeatherUpdateJob();
+});
+
+cron.schedule("0 1 * * *", () => {
+  console.log("⏰ Agendamento do cron: Executando o job de cotação de café...");
+  runCoffeeQuotesUpdateJob();
 });
 
 app.listen(config.port, () => {
@@ -69,4 +76,5 @@ app.listen(config.port, () => {
   runScrapingJob();
   runCurrencyUpdateJob();
   runWeatherUpdateJob();
+  runCoffeeQuotesUpdateJob();
 });

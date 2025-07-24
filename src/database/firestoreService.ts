@@ -3,6 +3,7 @@ import * as admin from "firebase-admin";
 import { NewsArticle } from "../types/news";
 import { CurrencyQuotes } from "../types/currency";
 import { WeatherData } from "../types/weather";
+import { MonthlyCoffeeReport } from "../types/coffee";
 
 export interface Banner {
   id?: string;
@@ -17,6 +18,7 @@ const SCRAPED_NEWS_COLLECTION = "scraped-news";
 const BANNERS_COLLECTION = "banners";
 const CURRENCIES_COLLECTION = "currencies";
 const WEATHER_COLLECTION = "weather";
+const COFFEE_COLLECTION = "coffee";
 
 export async function saveLocalNews(
   article: NewsArticle
@@ -326,6 +328,59 @@ export async function getLatestWeatherReading(): Promise<WeatherData | null> {
     };
   } catch (error) {
     console.error("Erro ao buscar dados do clima do Firestore:", error);
+    return null;
+  }
+}
+
+// Café
+
+export async function saveCoffeeReport(
+  report: MonthlyCoffeeReport
+): Promise<void> {
+  try {
+    const docId = `${report.year}-${String(report.month).padStart(2, "0")}`;
+    const docRef = db.collection(COFFEE_COLLECTION).doc(docId);
+
+    const reportToSave = {
+      ...report,
+      scrapedAt: admin.firestore.Timestamp.fromDate(report.scrapedAt),
+    };
+
+    await docRef.set(reportToSave, { merge: true });
+    console.log(
+      `Relatório de cotações de café para ${docId} salvo com sucesso.`
+    );
+  } catch (error) {
+    console.error(
+      "Erro ao salvar o relatório de cotações no Firestore:",
+      error
+    );
+  }
+}
+
+export async function getCoffeeReport(
+  year: number,
+  month: number
+): Promise<MonthlyCoffeeReport | null> {
+  try {
+    const docId = `${year}-${String(month).padStart(2, "0")}`;
+    const docRef = db.collection(COFFEE_COLLECTION).doc(docId);
+    const doc = await docRef.get();
+
+    if (!doc.exists) {
+      console.warn(`Nenhum relatório de cotações encontrado para ${docId}.`);
+      return null;
+    }
+
+    const data = doc.data() as any;
+    const scrapedAt = (data.scrapedAt as admin.firestore.Timestamp).toDate();
+
+    return { ...data, id: doc.id, scrapedAt };
+  } catch (error) {
+    console.error(
+      `Erro ao buscar relatório de cotações de ${year}-${month}:`,
+      error
+    );
     return null;
   }
 }
