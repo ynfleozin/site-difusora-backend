@@ -1,6 +1,7 @@
 import { db } from "../config/firebase";
 import * as admin from "firebase-admin";
 import { NewsArticle } from "../types/news";
+import { CurrencyQuotes } from "../types/currency";
 
 export interface Banner {
   id?: string;
@@ -233,4 +234,39 @@ export async function saveBanner(banner: Banner): Promise<Banner> {
   await docRef.set(banner, { merge: true });
 
   return { ...banner, id: docRef.id };
+}
+
+// Cotações
+
+const CURRENCIES_COLLECTION = "currencies";
+
+export async function saveCurrencyQuotes(quotes: CurrencyQuotes): Promise<void> {
+  try {
+    const docRef = db.collection(CURRENCIES_COLLECTION).doc("latest");
+    await docRef.set({
+      ...quotes,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(), 
+    });
+    console.log("Cotações de moedas salvas com sucesso no Firestore.");
+  } catch (error) {
+    console.error("Erro ao salvar cotações no Firestore:", error);
+  }
+}
+
+export async function getLatestCurrencyQuotes(): Promise<CurrencyQuotes | null> {
+  try {
+    const docRef = db.collection(CURRENCIES_COLLECTION).doc("latest");
+    const doc = await docRef.get();
+
+    if (!doc.exists) {
+      console.warn("Nenhum documento de cotações ('latest') encontrado no Firestore.");
+      return null;
+    }
+
+    const { updatedAt, ...quotes } = doc.data() as CurrencyQuotes & { updatedAt: admin.firestore.Timestamp };
+    return quotes;
+  } catch (error) {
+    console.error("Erro ao buscar cotações do Firestore:", error);
+    return null;
+  }
 }
