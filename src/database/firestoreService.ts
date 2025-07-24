@@ -284,15 +284,18 @@ export async function getLatestCurrencyQuotes(): Promise<CurrencyQuotes | null> 
 
 export async function saveWeatherReading(reading: WeatherData): Promise<void> {
   try {
-    const docRef = db.collection(WEATHER_COLLECTION).doc(); // Gera um ID automático
+    // ✅ Usa um ID de documento fixo para sobrescrever sempre o mais recente
+    const docRef = db.collection(WEATHER_COLLECTION).doc("latest");
 
     const readingToSave = {
       ...reading,
       recordedAt: admin.firestore.Timestamp.fromDate(reading.recordedAt),
     };
 
-    await docRef.set(readingToSave);
-    console.log("Dados do clima salvos com sucesso no Firestore.");
+    await docRef.set(readingToSave); 
+    console.log(
+      "Dados do clima mais recentes foram salvos/atualizados com sucesso."
+    );
   } catch (error) {
     console.error("Erro ao salvar dados do clima no Firestore:", error);
   }
@@ -300,20 +303,17 @@ export async function saveWeatherReading(reading: WeatherData): Promise<void> {
 
 export async function getLatestWeatherReading(): Promise<WeatherData | null> {
   try {
-    const snapshot = await db
-      .collection(WEATHER_COLLECTION)
-      .orderBy("recordedAt", "desc")
-      .limit(1)
-      .get();
+    const docRef = db.collection(WEATHER_COLLECTION).doc("latest");
+    const doc = await docRef.get();
 
-    if (snapshot.empty) {
-      console.warn("Nenhum registro de clima encontrado no Firestore.");
+    if (!doc.exists) {
+      console.warn(
+        "Nenhum registro de clima ('latest') encontrado no Firestore."
+      );
       return null;
     }
 
-    const doc = snapshot.docs[0];
-    const data = doc.data();
-
+    const data = doc.data() as any; 
     const recordedAt = (data.recordedAt as admin.firestore.Timestamp).toDate();
 
     return {
