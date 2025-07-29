@@ -18,7 +18,7 @@ const router = Router();
 router.get("/", async (req: Request, res: Response, next: NextFunction) => {
   try {
     console.log("Recebida requisição na rota /api/news. Chamando o serviço...");
-
+    res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate')
     const news = await getAggregatedNews();
     res.json(news);
   } catch (error) {
