@@ -1,5 +1,6 @@
 import { Router } from "express";
 import type { Request, Response, NextFunction } from "express";
+import { db } from "../../config/firebase";
 
 import {
   getAggregatedNews,
@@ -18,9 +19,30 @@ const router = Router();
 router.get("/", async (req: Request, res: Response, next: NextFunction) => {
   try {
     console.log("Recebida requisição na rota /api/news. Chamando o serviço...");
-    res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate')
+    res.setHeader("Cache-Control", "s-maxage=60, stale-while-revalidate");
     const news = await getAggregatedNews();
     res.json(news);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/latest", async (req, res, next) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 6;
+
+    const snapshot = await db
+      .collection("scraped-news")
+      .orderBy("publishedAt", "desc")
+      .limit(limit)
+      .get();
+
+    const latestNews = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    res.json(latestNews);
   } catch (error) {
     next(error);
   }
