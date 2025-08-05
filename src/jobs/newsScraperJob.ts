@@ -1,6 +1,9 @@
 import { scrapeCamara } from "../scrapers/camaraScraper";
 import { scrapeAgenciaBrasil } from "../scrapers/agenciaBrasilScraper";
-import { saveScrapedNews } from "../database/firestoreService";
+import {
+  saveScrapedNews,
+  scrapedNewsCache,
+} from "../database/firestoreService";
 import type { NewsArticle } from "../types/news";
 
 function createSlug(text: string): string {
@@ -19,7 +22,9 @@ export async function runScrapingJob() {
     ]);
 
     const allScrapedNews = [...camaraNews, ...agenciaBrasilNews];
-    console.log(`[JOB] ${allScrapedNews.length} notícias encontradas pelos scrapers.`);
+    console.log(
+      `[JOB] ${allScrapedNews.length} notícias encontradas pelos scrapers.`
+    );
 
     if (allScrapedNews.length === 0) {
       console.log("[JOB] Nenhuma notícia nova para salvar.");
@@ -35,8 +40,8 @@ export async function runScrapingJob() {
     });
 
     await Promise.all(savePromises);
+    scrapedNewsCache.clear();
     console.log("[JOB] Job de scraping concluído com sucesso.");
-
   } catch (error) {
     console.error("[JOB] Erro durante a execução do job de scraping:", error);
   }

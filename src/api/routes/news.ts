@@ -8,9 +8,13 @@ import {
   getNewsByCategory,
   getAvailableCategories,
   addLocalNewsArticle,
-  getLocalNews,
 } from "../../services/newsService";
 import { authMiddleware } from "../middleware/authMiddleware";
+import {
+  getCachedLocalNews,
+  getCachedScrapedNews,
+  localNewsCache,
+} from "../../database/firestoreService";
 
 const router = Router();
 
@@ -30,19 +34,9 @@ router.get("/", async (req: Request, res: Response, next: NextFunction) => {
 router.get("/latest", async (req, res, next) => {
   try {
     const limit = parseInt(req.query.limit as string) || 6;
-
-    const snapshot = await db
-      .collection("scraped-news")
-      .orderBy("publishedAt", "desc")
-      .limit(limit)
-      .get();
-
-    const latestNews = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-
-    res.json(latestNews);
+    const allNews = await getCachedScrapedNews();
+    const limitedNews = allNews.slice(0, limit);
+    res.json(limitedNews);
   } catch (error) {
     next(error);
   }
@@ -53,7 +47,7 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       console.log("Recebida requisição na rota /api/news/local.");
-      const news = await getLocalNews();
+      const news = await getCachedLocalNews();
       res.json(news);
     } catch (error) {
       next(error);
@@ -109,6 +103,7 @@ router.post("/", authMiddleware, async (req, res, next) => {
   try {
     const localNewsData = req.body;
     const addedNews = await addLocalNewsArticle(localNewsData);
+    localNewsCache.clear();
     res.status(201).json(addedNews);
   } catch (error) {
     next(error);

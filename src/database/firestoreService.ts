@@ -4,6 +4,7 @@ import { NewsArticle } from "../types/news";
 import { CurrencyQuotes } from "../types/currency";
 import { WeatherData } from "../types/weather";
 import { MonthlyCoffeeReport } from "../types/coffee";
+import { SimpleCache } from "../cache/cache";
 
 export interface Banner {
   id?: string;
@@ -19,6 +20,10 @@ const BANNERS_COLLECTION = "banners";
 const CURRENCIES_COLLECTION = "currencies";
 const WEATHER_COLLECTION = "weather";
 const COFFEE_COLLECTION = "coffee";
+
+export const scrapedNewsCache = new SimpleCache<NewsArticle[]>(60); 
+export const localNewsCache = new SimpleCache<NewsArticle[]>(120); 
+
 
 export async function saveLocalNews(
   article: NewsArticle
@@ -237,6 +242,71 @@ export async function getNewsBySlugFromFirestore(
     return undefined;
   }
 }
+
+export async function getCachedScrapedNews(): Promise<NewsArticle[]> {
+  const cached = scrapedNewsCache.get();
+  if (cached) {
+    console.log("Retornando notícias raspadas do cache");
+    return cached;
+  }
+
+  console.log("Buscando notícias raspadas do Firestore");
+  const snapshot = await db
+    .collection(SCRAPED_NEWS_COLLECTION)
+    .orderBy("publishedAt", "desc")
+    .limit(10)
+    .get();
+
+  const news = snapshot.docs.map((doc) => {
+    const data = doc.data();
+    return {
+      title: data.title,
+      body: data.body,
+      sourceUrl: data.sourceUrl,
+      sourceName: data.sourceName,
+      publishedAt: (data.publishedAt as admin.firestore.Timestamp).toDate(),
+      imageUrl: data.imageUrl,
+      author: data.author,
+      category: data.category,
+      slug: data.slug,
+    };
+  });
+
+  scrapedNewsCache.set(news);
+  return news;
+}
+
+export async function getCachedLocalNews(): Promise<NewsArticle[]> {
+  const cached = localNewsCache.get();
+  if (cached) {
+    console.log("Retornando notícias locais do cache");
+    return cached;
+  }
+
+  console.log("Buscando notícias locais do Firestore");
+  const snapshot = await db.collection(LOCAL_NEWS_COLLECTION).get();
+
+  const news: NewsArticle[] = [];
+  snapshot.forEach((doc) => {
+    const data = doc.data();
+    news.push({
+      title: data.title,
+      description: data.description,
+      body: data.body,
+      sourceUrl: data.sourceUrl,
+      sourceName: data.sourceName,
+      publishedAt: (data.publishedAt as admin.firestore.Timestamp).toDate(),
+      imageUrl: data.imageUrl,
+      author: data.author,
+      category: data.category,
+      slug: data.slug,
+    });
+  });
+
+  localNewsCache.set(news);
+  return news;
+}
+
 
 // Banners
 
