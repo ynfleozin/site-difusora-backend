@@ -23,7 +23,35 @@ const COFFEE_COLLECTION = "coffee";
 export async function saveLocalNews(
   article: NewsArticle
 ): Promise<NewsArticle> {
-  const docRef = db.collection(LOCAL_NEWS_COLLECTION).doc();
+  const existingDocQuery = await db
+    .collection(LOCAL_NEWS_COLLECTION)
+    .where("slug", "==", article.slug)
+    .where("sourceName", "==", article.sourceName)
+    .limit(1)
+    .get();
+
+  let docRef;
+  if (!existingDocQuery.empty) {
+    const existingDoc = existingDocQuery.docs[0];
+    docRef = existingDoc.ref;
+
+    const existingData = existingDoc.data();
+
+    const isEqual = (a: NewsArticle, b: any) =>
+      a.title === b.title &&
+      a.body === b.body &&
+      a.description === b.description &&
+      a.publishedAt.getTime() === b.publishedAt.toDate().getTime() &&
+      a.imageUrl === b.imageUrl &&
+      a.author === b.author &&
+      a.category === b.category;
+
+    if (isEqual(article, existingData)) {
+      return article;
+    }
+  } else {
+    docRef = db.collection(LOCAL_NEWS_COLLECTION).doc();
+  }
 
   const articleToSave = {
     ...article,
@@ -70,7 +98,7 @@ export async function getAllLocalNews(): Promise<NewsArticle[]> {
 export async function saveScrapedNews(
   article: NewsArticle
 ): Promise<NewsArticle> {
-  const existingDoc = await db
+  const existingDocQuery = await db
     .collection(SCRAPED_NEWS_COLLECTION)
     .where("slug", "==", article.slug)
     .where("sourceName", "==", article.sourceName)
@@ -78,8 +106,24 @@ export async function saveScrapedNews(
     .get();
 
   let docRef;
-  if (!existingDoc.empty) {
-    docRef = existingDoc.docs[0].ref;
+  if (!existingDocQuery.empty) {
+    const existingDoc = existingDocQuery.docs[0];
+    docRef = existingDoc.ref;
+
+    const existingData = existingDoc.data();
+
+    const isEqual = (a: NewsArticle, b: any) =>
+      a.title === b.title &&
+      a.body === b.body &&
+      a.description === b.description &&
+      a.publishedAt.getTime() === b.publishedAt.toDate().getTime() &&
+      a.imageUrl === b.imageUrl &&
+      a.author === b.author &&
+      a.category === b.category;
+
+    if (isEqual(article, existingData)) {
+      return article;
+    }
   } else {
     docRef = db.collection(SCRAPED_NEWS_COLLECTION).doc();
   }
@@ -292,7 +336,7 @@ export async function saveWeatherReading(reading: WeatherData): Promise<void> {
       recordedAt: admin.firestore.Timestamp.fromDate(reading.recordedAt),
     };
 
-    await docRef.set(readingToSave); 
+    await docRef.set(readingToSave);
     console.log(
       "Dados do clima mais recentes foram salvos/atualizados com sucesso."
     );
@@ -313,7 +357,7 @@ export async function getLatestWeatherReading(): Promise<WeatherData | null> {
       return null;
     }
 
-    const data = doc.data() as any; 
+    const data = doc.data() as any;
     const recordedAt = (data.recordedAt as admin.firestore.Timestamp).toDate();
 
     return {
