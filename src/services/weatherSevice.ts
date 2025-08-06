@@ -3,7 +3,7 @@ import { WeatherData } from "../types/weather";
 
 const API_KEY = process.env.OPENWEATHER_API_KEY;
 const CITY_ID = "3465944";
-const API_URL = `https://api.openweathermap.org/data/2.5/weather?id=${CITY_ID}&appid=${API_KEY}`;
+const API_URL = `https://api.openweathermap.org/data/2.5/weather?id=${CITY_ID}&appid=${API_KEY}&lang=pt_br`;
 
 const kelvinToCelsius = (kelvin: number): number => {
   return parseFloat((kelvin - 273.15).toFixed(1));
