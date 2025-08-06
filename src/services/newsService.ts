@@ -3,6 +3,8 @@ import {
   getAllLocalNews,
   getNewsBySlugFromFirestore,
   getAllScrapedNews,
+  getCachedLocalNews,
+  getCachedScrapedNews
 } from "../database/firestoreService";
 import type { NewsArticle } from "../types/news";
 
@@ -17,8 +19,8 @@ export async function getAggregatedNews(): Promise<NewsArticle[]> {
   console.log("Serviço: Buscando notícias agregadas do Firestore...");
 
   const [localNews, scrapedNews] = await Promise.all([
-    getAllLocalNews(),
-    getAllScrapedNews(), 
+    getCachedLocalNews(),
+    getCachedScrapedNews(), 
   ]);
 
   const allNews = [...localNews, ...scrapedNews];
