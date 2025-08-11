@@ -1,27 +1,22 @@
-import { scrapeCccvWebsite } from "../scrapers/coffeeScraper";
+import { scrapeLatestCoffeeQuote } from "../scrapers/coffeeScraper";
 import {
-  saveCoffeeReport,
-  getCoffeeReport,
+  saveLatestCoffeeQuote,
+  getLatestCoffeeQuote,
 } from "../database/firestoreService";
+import { LatestCoffeeData } from "../types/coffee";
 
 export async function updateCoffeeQuotesData(): Promise<void> {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth() + 1;
+  const data = await scrapeLatestCoffeeQuote();
 
-  const report = await scrapeCccvWebsite(year, month);
-
-  if (report) {
-    await saveCoffeeReport(report);
-    console.log("Atualização salva para:", year, month);
+  if (data) {
+    await saveLatestCoffeeQuote(data);
+    console.log("Atualização da cotação de café salva com sucesso.");
   } else {
-    console.error("Falha ao obter dados.");
+    console.error("Falha ao obter dados da cotação de café.");
   }
 }
 
-export async function getMonthlyCoffeeReport(year: number, month: number) {
-  console.log(
-    `Serviço (CoffeeQuotes): Buscando relatório para ${year}-${month}.`
-  );
-  return await getCoffeeReport(year, month);
+export async function getLatestCoffeeQuoteService(): Promise<LatestCoffeeData | null> {
+  console.log(`Serviço (CoffeeQuotes): Buscando última cotação.`);
+  return await getLatestCoffeeQuote();
 }

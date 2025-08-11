@@ -9,15 +9,9 @@ export interface DailyCoffeeQuote {
   conilon: CoffeePrice[];
 }
 
-export interface MonthlyCoffeeReport {
+export interface LatestCoffeeData {
   id?: string;
-  year: number;
-  month: number;
   harvest: string;
-  quotes: DailyCoffeeQuote[];
-  monthlyAverage: {
-    arabica: CoffeePrice[];
-    conilon: CoffeePrice[];
-  };
+  quote: DailyCoffeeQuote;
   scrapedAt: Date;
 }

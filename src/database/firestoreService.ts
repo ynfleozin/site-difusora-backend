@@ -3,7 +3,7 @@ import * as admin from "firebase-admin";
 import { NewsArticle } from "../types/news";
 import { CurrencyQuotes } from "../types/currency";
 import { WeatherData } from "../types/weather";
-import { MonthlyCoffeeReport } from "../types/coffee";
+import { LatestCoffeeData } from "../types/coffee";
 import { SimpleCache } from "../cache/cache";
 
 export interface Banner {
@@ -21,9 +21,8 @@ const CURRENCIES_COLLECTION = "currencies";
 const WEATHER_COLLECTION = "weather";
 const COFFEE_COLLECTION = "coffee";
 
-export const scrapedNewsCache = new SimpleCache<NewsArticle[]>(60); 
-export const localNewsCache = new SimpleCache<NewsArticle[]>(120); 
-
+export const scrapedNewsCache = new SimpleCache<NewsArticle[]>(60);
+export const localNewsCache = new SimpleCache<NewsArticle[]>(120);
 
 export async function saveLocalNews(
   article: NewsArticle
@@ -307,7 +306,6 @@ export async function getCachedLocalNews(): Promise<NewsArticle[]> {
   return news;
 }
 
-
 // Banners
 
 export async function getAllBanners(): Promise<Banner[]> {
@@ -448,41 +446,36 @@ export async function getLatestWeatherReading(): Promise<WeatherData | null> {
 
 // Café
 
-export async function saveCoffeeReport(
-  report: MonthlyCoffeeReport
+export async function saveLatestCoffeeQuote(
+  data: LatestCoffeeData
 ): Promise<void> {
   try {
-    const docId = `${report.year}-${String(report.month).padStart(2, "0")}`;
-    const docRef = db.collection(COFFEE_COLLECTION).doc(docId);
+    const docRef = db.collection(COFFEE_COLLECTION).doc("latest");
 
-    const reportToSave = {
-      ...report,
-      scrapedAt: admin.firestore.Timestamp.fromDate(report.scrapedAt),
+    const dataToSave = {
+      ...data,
+      scrapedAt: admin.firestore.Timestamp.fromDate(data.scrapedAt),
     };
 
-    await docRef.set(reportToSave, { merge: true });
+    await docRef.set(dataToSave);
     console.log(
-      `Relatório de cotações de café para ${docId} salvo com sucesso.`
+      `Cotação de café mais recente (Dia ${data.quote.day}) salva com sucesso.`
     );
   } catch (error) {
     console.error(
-      "Erro ao salvar o relatório de cotações no Firestore:",
+      "Erro ao salvar a cotação de café mais recente no Firestore:",
       error
     );
   }
 }
 
-export async function getCoffeeReport(
-  year: number,
-  month: number
-): Promise<MonthlyCoffeeReport | null> {
+export async function getLatestCoffeeQuote(): Promise<LatestCoffeeData | null> {
   try {
-    const docId = `${year}-${String(month).padStart(2, "0")}`;
-    const docRef = db.collection(COFFEE_COLLECTION).doc(docId);
+    const docRef = db.collection(COFFEE_COLLECTION).doc("latest");
     const doc = await docRef.get();
 
     if (!doc.exists) {
-      console.warn(`Nenhum relatório de cotações encontrado para ${docId}.`);
+      console.warn(`Nenhum documento 'latest' de cotação de café encontrado.`);
       return null;
     }
 
@@ -491,10 +484,7 @@ export async function getCoffeeReport(
 
     return { ...data, id: doc.id, scrapedAt };
   } catch (error) {
-    console.error(
-      `Erro ao buscar relatório de cotações de ${year}-${month}:`,
-      error
-    );
+    console.error(`Erro ao buscar a cotação de café mais recente:`, error);
     return null;
   }
 }
