@@ -275,6 +275,8 @@ export async function getCachedScrapedNews(): Promise<NewsArticle[]> {
   return news;
 }
 
+let localNewsFetchPromise: Promise<NewsArticle[]> | null = null;
+
 export async function getCachedLocalNews(): Promise<NewsArticle[]> {
   const cached = localNewsCache.get();
   if (cached) {
@@ -282,28 +284,42 @@ export async function getCachedLocalNews(): Promise<NewsArticle[]> {
     return cached;
   }
 
-  console.log("Buscando notícias locais do Firestore");
-  const snapshot = await db.collection(LOCAL_NEWS_COLLECTION).get();
+  if (!localNewsFetchPromise) {
+    console.log("🔄 Buscando notícias locais do Firestore...");
+    localNewsFetchPromise = (async () => {
+      const snapshot = await db.collection(LOCAL_NEWS_COLLECTION).get();
 
-  const news: NewsArticle[] = [];
-  snapshot.forEach((doc) => {
-    const data = doc.data();
-    news.push({
-      title: data.title,
-      description: data.description,
-      body: data.body,
-      sourceUrl: data.sourceUrl,
-      sourceName: data.sourceName,
-      publishedAt: (data.publishedAt as admin.firestore.Timestamp).toDate(),
-      imageUrl: data.imageUrl,
-      author: data.author,
-      category: data.category,
-      slug: data.slug,
-    });
-  });
+      const news: NewsArticle[] = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        news.push({
+          title: data.title,
+          description: data.description,
+          body: data.body,
+          sourceUrl: data.sourceUrl,
+          sourceName: data.sourceName,
+          publishedAt: (data.publishedAt as admin.firestore.Timestamp).toDate(),
+          imageUrl: data.imageUrl,
+          author: data.author,
+          category: data.category,
+          slug: data.slug,
+        });
+      });
 
-  localNewsCache.set(news);
-  return news;
+      localNewsCache.set(news);
+      return news;
+    })();
+  } else {
+    console.log(
+      "⏳ Outra requisição já está carregando notícias locais, aguardando..."
+    );
+  }
+
+  try {
+    return await localNewsFetchPromise;
+  } finally {
+    localNewsFetchPromise = null;
+  }
 }
 
 // Banners

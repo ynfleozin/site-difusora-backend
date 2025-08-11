@@ -4,7 +4,8 @@ import {
   getNewsBySlugFromFirestore,
   getAllScrapedNews,
   getCachedLocalNews,
-  getCachedScrapedNews
+  getCachedScrapedNews,
+  localNewsCache,
 } from "../database/firestoreService";
 import type { NewsArticle } from "../types/news";
 
@@ -20,7 +21,7 @@ export async function getAggregatedNews(): Promise<NewsArticle[]> {
 
   const [localNews, scrapedNews] = await Promise.all([
     getCachedLocalNews(),
-    getCachedScrapedNews(), 
+    getCachedScrapedNews(),
   ]);
 
   const allNews = [...localNews, ...scrapedNews];
@@ -41,14 +42,16 @@ export async function getAggregatedNews(): Promise<NewsArticle[]> {
 export async function getArticleBySlug(
   slug: string
 ): Promise<NewsArticle | undefined> {
-  console.log(`Serviço: Buscando artigo pelo slug "${slug}" diretamente no Firestore.`);
+  console.log(
+    `Serviço: Buscando artigo pelo slug "${slug}" diretamente no Firestore.`
+  );
   return await getNewsBySlugFromFirestore(slug);
 }
 
 export async function getNewsByCategory(
   category: string
 ): Promise<NewsArticle[]> {
-  const allNews = await getAggregatedNews(); 
+  const allNews = await getAggregatedNews();
   return allNews.filter(
     (article) =>
       article.category &&
@@ -57,7 +60,7 @@ export async function getNewsByCategory(
 }
 
 export async function getAvailableCategories(): Promise<string[]> {
-  const allNews = await getAggregatedNews(); 
+  const allNews = await getAggregatedNews();
   const uniqueCategories = [
     ...new Set(
       allNews.map((article) => article.category).filter(Boolean) as string[]
@@ -94,9 +97,8 @@ export async function addLocalNewsArticle(
 
   const savedArticle = await saveLocalNews(articleToSave);
 
-  console.log(
-    "Notícia local adicionada no Firestore e cache invalidado:",
-    savedArticle
-  );
+  console.log("✅ Notícia local adicionada. Atualizando cache...");
+  localNewsCache.set(await getAllLocalNews());
+
   return savedArticle;
 }
