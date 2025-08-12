@@ -509,6 +509,18 @@ export async function getLatestCoffeeQuote(): Promise<LatestCoffeeData | null> {
 
 // Live
 
+function convertToYouTubeEmbed(url: string): string | null {
+  const regex =
+    /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/;
+
+  const match = url.match(regex);
+  if (match && match[1]) {
+    const videoId = match[1];
+    return `https://www.youtube.com/embed/${videoId}`;
+  }
+  return null;
+}
+
 export async function getLiveStreamLink(): Promise<string | null> {
   try {
     const doc = await db
@@ -517,7 +529,7 @@ export async function getLiveStreamLink(): Promise<string | null> {
       .get();
     if (doc.exists) {
       const data = doc.data();
-      return data?.liveLink || null;
+      return data?.liveLinkEmbed || null;
     }
     return null;
   } catch (error) {
@@ -526,10 +538,16 @@ export async function getLiveStreamLink(): Promise<string | null> {
   }
 }
 
-export async function setLiveStreamLink(link: string): Promise<void> {
+export async function setLiveStreamLink(originalLink: string): Promise<void> {
   try {
+    const embedLink = convertToYouTubeEmbed(originalLink);
+    if (!embedLink) {
+      throw new Error("Link do YouTube inválido ou formato não suportado.");
+    }
+
     await db.collection(LIVE_STREAM_COLLECTION).doc(LIVE_STREAM_DOC_ID).set({
-      liveLink: link,
+      liveLinkOriginal: originalLink,
+      liveLinkEmbed: embedLink,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
   } catch (error) {

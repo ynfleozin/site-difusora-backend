@@ -10,8 +10,8 @@ const router = express.Router();
 
 router.get("/", async (req, res) => {
   try {
-    const link = await getLiveStreamLink();
-    res.json({ liveLink: link });
+    const embedLink = await getLiveStreamLink();
+    res.json({ liveLinkEmbed: embedLink });
   } catch {
     res.status(500).json({ message: "Erro ao buscar live stream." });
   }
