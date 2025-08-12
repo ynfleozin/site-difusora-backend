@@ -20,6 +20,8 @@ const BANNERS_COLLECTION = "banners";
 const CURRENCIES_COLLECTION = "currencies";
 const WEATHER_COLLECTION = "weather";
 const COFFEE_COLLECTION = "coffee";
+const LIVE_STREAM_COLLECTION = "live-stream";
+const LIVE_STREAM_DOC_ID = "current-live";
 
 export const scrapedNewsCache = new SimpleCache<NewsArticle[]>(60);
 export const localNewsCache = new SimpleCache<NewsArticle[]>(120);
@@ -502,5 +504,48 @@ export async function getLatestCoffeeQuote(): Promise<LatestCoffeeData | null> {
   } catch (error) {
     console.error(`Erro ao buscar a cotação de café mais recente:`, error);
     return null;
+  }
+}
+
+// Live
+
+export async function getLiveStreamLink(): Promise<string | null> {
+  try {
+    const doc = await db
+      .collection(LIVE_STREAM_COLLECTION)
+      .doc(LIVE_STREAM_DOC_ID)
+      .get();
+    if (doc.exists) {
+      const data = doc.data();
+      return data?.liveLink || null;
+    }
+    return null;
+  } catch (error) {
+    console.error("Erro ao buscar link da live:", error);
+    return null;
+  }
+}
+
+export async function setLiveStreamLink(link: string): Promise<void> {
+  try {
+    await db.collection(LIVE_STREAM_COLLECTION).doc(LIVE_STREAM_DOC_ID).set({
+      liveLink: link,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  } catch (error) {
+    console.error("Erro ao salvar link da live:", error);
+    throw error;
+  }
+}
+
+export async function removeLiveStreamLink(): Promise<void> {
+  try {
+    await db
+      .collection(LIVE_STREAM_COLLECTION)
+      .doc(LIVE_STREAM_DOC_ID)
+      .delete();
+  } catch (error) {
+    console.error("Erro ao remover link da live:", error);
+    throw error;
   }
 }
