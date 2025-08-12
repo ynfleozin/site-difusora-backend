@@ -31,7 +31,7 @@ app.use("/api/currencies", currencyRoutes);
 app.use("/api/weather", weatherRoutes);
 app.use("/api/banners", bannerRoutes);
 app.use("/api/coffee", coffeRoutes);
-app.use("api/live-stream", liveStreamRoutes);
+app.use("/api/live-stream", liveStreamRoutes);
 
 // Manipulador de erros
 const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
@@ -39,10 +39,6 @@ const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
   res.status(500).send({ message: "Ocorreu um erro no servidor!" });
 };
 app.use(errorHandler);
-
-app.listen(config.port, () => {
-  console.log(`Servidor TypeScript rodando na porta ${config.port}`);
-});
 
 // Jobs
 cron.schedule("0 * * * *", () => {
