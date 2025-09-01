@@ -68,6 +68,7 @@ export async function saveLocalNews(
     imageUrl: article.imageUrl || null,
     author: article.author || null,
     description: article.description || null,
+    category: article.category?.toLowerCase() || null,
   };
 
   await docRef.set(articleToSave, { merge: true });
@@ -143,6 +144,7 @@ export async function saveScrapedNews(
     imageUrl: article.imageUrl || null,
     author: article.author || null,
     description: article.description || null,
+    category: article.category?.toLowerCase() || null,
   };
 
   await docRef.set(articleToSave, { merge: true });
@@ -294,7 +296,7 @@ export async function getCachedNewsByCategory(
 
   const snapshot = await db
     .collection(SCRAPED_NEWS_COLLECTION)
-    .where("category", "==", category)
+    .where("category", "==", category.toLowerCase())
     .orderBy("publishedAt", "desc")
     .get();
 
