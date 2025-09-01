@@ -23,8 +23,11 @@ const COFFEE_COLLECTION = "coffee";
 const LIVE_STREAM_COLLECTION = "live-stream";
 const LIVE_STREAM_DOC_ID = "current-live";
 
-export const scrapedNewsCache = new SimpleCache<NewsArticle[]>(60);
-export const localNewsCache = new SimpleCache<NewsArticle[]>(120);
+export const scrapedNewsCache = new SimpleCache<NewsArticle[]>(3600);
+export const localNewsCache = new SimpleCache<NewsArticle[]>(3600);
+export const categoryNewsCache = new SimpleCache<Record<string, NewsArticle[]>>(
+  3600
+);
 
 export async function saveLocalNews(
   article: NewsArticle
@@ -274,6 +277,47 @@ export async function getCachedScrapedNews(): Promise<NewsArticle[]> {
   });
 
   scrapedNewsCache.set(news);
+  return news;
+}
+
+export async function getCachedNewsByCategory(
+  category: string
+): Promise<NewsArticle[]> {
+  const cached = categoryNewsCache.get();
+
+  if (cached && cached[category]) {
+    console.log(`Retornando notícias da categoria "${category}" do cache`);
+    return cached[category];
+  }
+
+  console.log(`Buscando notícias da categoria "${category}" no Firestore`);
+
+  const snapshot = await db
+    .collection(SCRAPED_NEWS_COLLECTION)
+    .where("category", "==", category)
+    .orderBy("publishedAt", "desc")
+    .get();
+
+  const news = snapshot.docs.map((doc) => {
+    const data = doc.data();
+    return {
+      title: data.title,
+      body: data.body,
+      sourceUrl: data.sourceUrl,
+      sourceName: data.sourceName,
+      publishedAt: (data.publishedAt as admin.firestore.Timestamp).toDate(),
+      imageUrl: data.imageUrl,
+      author: data.author,
+      category: data.category,
+      slug: data.slug,
+    };
+  });
+
+  categoryNewsCache.set({
+    ...(cached || {}),
+    [category]: news,
+  });
+
   return news;
 }
 

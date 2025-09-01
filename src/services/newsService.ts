@@ -6,6 +6,7 @@ import {
   getCachedLocalNews,
   getCachedScrapedNews,
   localNewsCache,
+  getCachedNewsByCategory,
 } from "../database/firestoreService";
 import type { NewsArticle } from "../types/news";
 
@@ -51,12 +52,7 @@ export async function getArticleBySlug(
 export async function getNewsByCategory(
   category: string
 ): Promise<NewsArticle[]> {
-  const allNews = await getAggregatedNews();
-  return allNews.filter(
-    (article) =>
-      article.category &&
-      article.category.toLowerCase() === category.toLowerCase()
-  );
+  return await getCachedNewsByCategory(category);
 }
 
 export async function getAvailableCategories(): Promise<string[]> {
