@@ -286,22 +286,28 @@ export async function getCachedNewsByCategory(
   category: string
 ): Promise<NewsArticle[]> {
   const cached = categoryNewsCache.get();
+  const cleanCategory = category.toLowerCase().trim();
 
-  if (cached && cached[category]) {
-    console.log(`Retornando notícias da categoria "${category}" do cache`);
-    return cached[category];
+  if (cached && cached[cleanCategory]) {
+    console.log(`Retornando notícias da categoria "${cleanCategory}" do cache`);
+    return cached[cleanCategory];
   }
 
-  console.log(`Buscando notícias da categoria "${category}" no Firestore`);
+  console.log(`Buscando notícias da categoria "${cleanCategory}" no Firestore`);
 
-  const snapshot = await db
-    .collection(SCRAPED_NEWS_COLLECTION)
-    .where("category", "==", category.toLowerCase())
-    .orderBy("publishedAt", "desc")
-    .get();
+  const [scrapedSnapshot, localSnapshot] = await Promise.all([
+    db
+      .collection(SCRAPED_NEWS_COLLECTION)
+      .where("category", "==", cleanCategory)
+      .get(),
+    db
+      .collection(LOCAL_NEWS_COLLECTION)
+      .where("category", "==", cleanCategory)
+      .get(),
+  ]);
 
-  const news = snapshot.docs.map((doc) => {
-    const data = doc.data();
+  const mapDocToNewsArticle = (doc: admin.firestore.DocumentSnapshot): NewsArticle => {
+    const data = doc.data()!;
     return {
       title: data.title,
       body: data.body,
@@ -313,14 +319,21 @@ export async function getCachedNewsByCategory(
       category: data.category,
       slug: data.slug,
     };
-  });
+  };
+
+  const scrapedNews = scrapedSnapshot.docs.map(mapDocToNewsArticle);
+  const localNews = localSnapshot.docs.map(mapDocToNewsArticle);
+
+  const allNews = [...scrapedNews, ...localNews];
+  allNews.sort((a, b) => b.publishedAt.getTime() - a.publishedAt.getTime());
 
   categoryNewsCache.set({
     ...(cached || {}),
-    [category]: news,
+    [cleanCategory]: allNews,
   });
-
-  return news;
+  
+  console.log(`Encontradas ${allNews.length} notícias para a categoria "${cleanCategory}".`);
+  return allNews;
 }
 
 let localNewsFetchPromise: Promise<NewsArticle[]> | null = null;
