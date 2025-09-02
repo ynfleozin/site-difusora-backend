@@ -63,6 +63,7 @@ export async function scrapeAgenciaBrasil(): Promise<NewsArticle[]> {
         $("img[src*='logo-agenciabrasil.svg']").closest("p").remove();
         $("img[src*='ebc.png']").remove();
         $("img[src*='ebc.gif']").remove();
+        $("a[href*='whatsapp.com/channel']").closest("p").remove();
 
         const cleanedBodyContent = $.html();
 
