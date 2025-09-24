@@ -12,6 +12,7 @@ export interface Banner {
   imageUrl: string;
   linkUrl?: string;
   altText?: string;
+  isVisible?: boolean;
 }
 
 const LOCAL_NEWS_COLLECTION = "local-news";
@@ -306,7 +307,9 @@ export async function getCachedNewsByCategory(
       .get(),
   ]);
 
-  const mapDocToNewsArticle = (doc: admin.firestore.DocumentSnapshot): NewsArticle => {
+  const mapDocToNewsArticle = (
+    doc: admin.firestore.DocumentSnapshot
+  ): NewsArticle => {
     const data = doc.data()!;
     return {
       title: data.title,
@@ -331,8 +334,10 @@ export async function getCachedNewsByCategory(
     ...(cached || {}),
     [cleanCategory]: allNews,
   });
-  
-  console.log(`Encontradas ${allNews.length} notícias para a categoria "${cleanCategory}".`);
+
+  console.log(
+    `Encontradas ${allNews.length} notícias para a categoria "${cleanCategory}".`
+  );
   return allNews;
 }
 
@@ -397,12 +402,28 @@ export async function getAllBanners(): Promise<Banner[]> {
         imageUrl: data.imageUrl,
         linkUrl: data.linkUrl || "#",
         altText: data.altText || "Anúncio",
+        isVisible: data.isVisible !== undefined ? data.isVisible : true,
       });
     });
     return banners;
   } catch (error) {
     console.error("Erro ao buscar banners do Firestore:", error);
     return [];
+  }
+}
+
+export async function updateBannerVisibility(
+  id: string,
+  isVisible: boolean
+): Promise<boolean> {
+  try {
+    const bannerRef = db.collection(BANNERS_COLLECTION).doc(id);
+    await bannerRef.update({ isVisible: isVisible });
+    console.log(`Visibilidade do banner ${id} atualizada para ${isVisible}`);
+    return true;
+  } catch (error) {
+    console.error(`Erro ao atualizar visibilidade do banner ${id}:`, error);
+    return false;
   }
 }
 
