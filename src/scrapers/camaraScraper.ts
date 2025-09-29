@@ -3,11 +3,22 @@ import * as cheerio from "cheerio";
 import { config } from "../config/index";
 import type { NewsArticle } from "../types/news";
 
+const axiosOptions = {
+  timeout: 25000, 
+  headers: {
+    "User-Agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
+  },
+};
+
 export async function scrapeCamara(): Promise<NewsArticle[]> {
   console.log("Iniciando scraping da Câmara dos Deputados...");
 
   try {
-    const { data: listHtml } = await axios.get(config.sites.camara.url);
+    const { data: listHtml } = await axios.get(
+      config.sites.camara.url,
+      axiosOptions
+    );
     const $ = cheerio.load(listHtml);
 
     const articleLinks: string[] = [];
@@ -26,13 +37,9 @@ export async function scrapeCamara(): Promise<NewsArticle[]> {
     }
 
     const articles: NewsArticle[] = [];
-    const headers = {
-      "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
-    };
 
     for (const link of articleLinks) {
-      const { data: articleHtml } = await axios.get(link, { headers });
+      const { data: articleHtml } = await axios.get(link, axiosOptions);
       const $$ = cheerio.load(articleHtml);
 
       const title = $$("article#content-noticia h1.g-artigo__titulo")
@@ -40,7 +47,6 @@ export async function scrapeCamara(): Promise<NewsArticle[]> {
         .trim();
       const articleBody = $$("div.g-artigo__texto-principal");
 
-      // Remove elementos indesejados
       articleBody.find("aside.l-acoes-apoio").remove();
       articleBody.find("p:contains('Da Redação')").remove();
       articleBody.find("p:contains('Reportagem')").remove();
@@ -49,7 +55,6 @@ export async function scrapeCamara(): Promise<NewsArticle[]> {
 
       if (title && bodyContent) {
         const publishedAtText = $$("p.g-artigo__data-hora").text();
-
         const dateTimeRegex = /(\d{2}\/\d{2}\/\d{4}).*?(\d{2}:\d{2})/;
         const match = publishedAtText.match(dateTimeRegex);
         const category = $$("span.g-artigo__categoria").text().trim();
@@ -60,9 +65,7 @@ export async function scrapeCamara(): Promise<NewsArticle[]> {
         if (match && match[1] && match[2]) {
           const datePart = match[1];
           const timePart = match[2];
-
           const dateParts = datePart.split("/");
-
           const isoDateString = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}T${timePart}:00`;
           publishedAt = new Date(isoDateString);
         }
@@ -70,9 +73,7 @@ export async function scrapeCamara(): Promise<NewsArticle[]> {
         let description = "";
         const firstParagraph = articleBody
           .find("p")
-          .filter((_, el) => {
-            return $$(el).text().trim().length > 20;
-          })
+          .filter((_, el) => $$(el).text().trim().length > 20)
           .first();
 
         if (firstParagraph.length > 0) {
