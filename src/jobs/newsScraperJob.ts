@@ -3,8 +3,10 @@ import { scrapeAgenciaBrasil } from "../scrapers/agenciaBrasilScraper";
 import {
   saveScrapedNews,
   scrapedNewsCache,
+  trimScrapedNewsByCategory,
 } from "../database/firestoreService";
-import type { NewsArticle } from "../types/news";
+
+const NEWS_LIMIT_PER_CATEGORY = 20;
 
 function createSlug(text: string): string {
   return text
@@ -31,18 +33,40 @@ export async function runScrapingJob() {
       return;
     }
 
-    const savePromises = allScrapedNews.map((article) => {
-      const articleWithSlug = {
-        ...article,
-        slug: article.slug || createSlug(article.title),
-      };
-      return saveScrapedNews(articleWithSlug);
-    });
+    const processedArticles = allScrapedNews.map((article) => ({
+      ...article,
+      slug: article.slug || createSlug(article.title),
+      category: article.category?.toLowerCase() || "geral",
+    }));
 
+    const savePromises = processedArticles.map((article) =>
+      saveScrapedNews(article)
+    );
     await Promise.all(savePromises);
+    console.log("[JOB] Todas as notícias novas foram salvas no Firestore.");
+
+    const affectedCategories = [
+      ...new Set(
+        processedArticles
+          .map((article) => article.category)
+          .filter((category): category is string => !!category)
+      ),
+    ];
+
+    if (affectedCategories.length > 0) {
+      console.log(`[JOB] Categorias afetadas: ${affectedCategories.join(", ")}`);
+
+      const trimPromises = affectedCategories.map((category) =>
+        trimScrapedNewsByCategory(category, NEWS_LIMIT_PER_CATEGORY)
+      );
+      await Promise.all(trimPromises);
+      console.log("[JOB] Verificação e limpeza de notícias antigas concluída.");
+    }
+
     scrapedNewsCache.clear();
-    console.log("[JOB] Job de scraping concluído com sucesso.");
+
+    console.log("✅ [JOB] Job de scraping concluído com sucesso!");
   } catch (error) {
-    console.error("[JOB] Erro durante a execução do job de scraping:", error);
+    console.error("❌ [JOB] Erro durante a execução do job de scraping:", error);
   }
 }

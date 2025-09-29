@@ -388,6 +388,60 @@ export async function getCachedLocalNews(): Promise<NewsArticle[]> {
   }
 }
 
+export async function trimScrapedNewsByCategory(
+  category: string,
+  limit: number
+): Promise<void> {
+  if (!category) {
+    console.warn("Tentativa de aparar notícias com categoria nula ou vazia.");
+    return;
+  }
+
+  const collectionRef = db.collection(SCRAPED_NEWS_COLLECTION);
+  const query = collectionRef.where("category", "==", category.toLowerCase());
+
+  try {
+    const countSnapshot = await query.count().get();
+    const total = countSnapshot.data().count;
+
+    console.log(
+      `[Trim] Categoria "${category}": ${total} notícias encontradas.`
+    );
+
+    if (total > limit) {
+      const excess = total - limit;
+      console.log(
+        `[Trim] Categoria "${category}": Excesso de ${excess} notícias. Removendo as mais antigas...`
+      );
+
+      const oldestDocsSnapshot = await query
+        .orderBy("publishedAt", "asc")
+        .limit(excess)
+        .get();
+
+      if (oldestDocsSnapshot.empty) {
+        return; 
+      }
+
+      const batch = db.batch();
+      oldestDocsSnapshot.forEach((doc) => {
+        batch.delete(doc.ref);
+      });
+
+      await batch.commit();
+
+      console.log(
+        `✅ [Trim] ${oldestDocsSnapshot.size} notícias antigas da categoria "${category}" foram removidas.`
+      );
+    }
+  } catch (error) {
+    console.error(
+      `❌ [Trim] Erro ao aparar notícias da categoria "${category}":`,
+      error
+    );
+  }
+}
+
 // Banners
 
 export async function getAllBanners(): Promise<Banner[]> {
