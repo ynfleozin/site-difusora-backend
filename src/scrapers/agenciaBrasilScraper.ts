@@ -55,6 +55,13 @@ export async function scrapeAgenciaBrasil(): Promise<NewsArticle[]> {
           continue;
         }
 
+        const imageUrl = item.enclosure?.url || item["imagem-destaque"];
+
+        if (!imageUrl) {
+          console.log(`- Notícia pulada (sem imagem): "${item.title}"`);
+          continue;
+        }
+
         const $ = cheerio.load(rawContentHTML);
 
         $('h3:contains("Notícias relacionadas:")').next("ul").remove();
@@ -69,7 +76,7 @@ export async function scrapeAgenciaBrasil(): Promise<NewsArticle[]> {
 
         const description = cleanedBodyContent
           ? cheerio.load(cleanedBodyContent).text().substring(0, 200).trim() +
-            "..."
+          "..."
           : undefined;
 
         const finalCategory = item.category ? item.category._ : category;
@@ -83,7 +90,7 @@ export async function scrapeAgenciaBrasil(): Promise<NewsArticle[]> {
           sourceUrl: item.link,
           sourceName: "Agência Brasil",
           publishedAt: item.pubDate ? new Date(item.pubDate) : new Date(),
-          imageUrl: item.enclosure?.url || item["imagem-destaque"],
+          imageUrl: imageUrl, 
           author: item.creator || null,
           category: formattedCategory,
           description: description,
